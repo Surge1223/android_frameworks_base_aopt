@@ -291,8 +291,8 @@ int main(int argc, char **argv)
     int result = 1;    // pessimistically assume an error.
     int tolerance = 0;
 
-    /* default to compression */
-    bundle.setCompressionMethod(ZipEntry::kCompressDeflated);
+    /* default to 0 compression */
+    bundle.setCompressionMethod(ZipEntry::kCompressStored);
 
     if (argc < 2) {
     header();
