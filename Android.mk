@@ -92,7 +92,7 @@ aoptcppFlags := \
 aoptCflags := -D'AOPT_VERSION="android-$(PLATFORM_VERSION)-$(TARGET_BUILD_VARIANT)"'
 aoptCflags += -Wno-format-y2k
 ifeq ($(TARGET_WANTS_AAPT_COMPRESS),true)
-aoptCflags += -DAOPT_COMPRESS=1
+aoptCflags += -DAOPT_COMPRESS
 endif
 aoptCflags += $(CFLAGS)
 
