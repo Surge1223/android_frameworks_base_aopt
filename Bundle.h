@@ -54,13 +54,14 @@ public:
           mWantUTF16(false), mValues(false), mIncludeMetaData(false),
           mCompressionMethod(0), mJunkPath(false), mOutputAPKFile(NULL),
           mManifestPackageNameOverride(NULL), mInstrumentationPackageNameOverride(NULL),
-          mAutoAddOverlay(false), mGenDependencies(false), mNoVersionVectors(false),
+          mIsOverlayPackage(false),
+          mAutoAddOverlay(true), mGenDependencies(false), mNoVersionVectors(false),
           mCrunchedOutputDir(NULL), mProguardFile(NULL), mMainDexProguardFile(NULL),
           mAndroidManifestFile(NULL), mPublicOutputFile(NULL),
           mRClassDir(NULL), mResourceIntermediatesDir(NULL), mManifestMinSdkVersion(NULL),
           mMinSdkVersion(NULL), mTargetSdkVersion(NULL), mMaxSdkVersion(NULL),
           mVersionCode(NULL), mVersionName(NULL), mReplaceVersion(false), mCustomPackage(NULL),
-          mExtraPackages(NULL), mMaxResVersion(NULL), mDebugMode(false), mNonConstantId(false),
+          mExtraPackages(NULL), mMaxResVersion(NULL), mDebugMode(false), mNonConstantId(true),
           mSkipSymbolsWithoutDefaultLocalization(false),
           mProduct(NULL), mUseCrunchCache(false), mErrorOnFailedInsert(false),
           mErrorOnMissingConfigEntry(false), mOutputTextSymbols(NULL),
@@ -114,6 +115,8 @@ public:
     void setManifestPackageNameOverride(const char * val) { mManifestPackageNameOverride = val; }
     const char* getInstrumentationPackageNameOverride() const { return mInstrumentationPackageNameOverride; }
     void setInstrumentationPackageNameOverride(const char * val) { mInstrumentationPackageNameOverride = val; }
+    bool getIsOverlayPackage() const { return mIsOverlayPackage; }
+    void setIsOverlayPackage(bool val) { mIsOverlayPackage = val; }
     bool getAutoAddOverlay() { return mAutoAddOverlay; }
     void setAutoAddOverlay(bool val) { mAutoAddOverlay = val; }
     bool getGenDependencies() { return mGenDependencies; }
@@ -296,6 +299,7 @@ private:
     const char* mOutputAPKFile;
     const char* mManifestPackageNameOverride;
     const char* mInstrumentationPackageNameOverride;
+    bool        mIsOverlayPackage;
     bool        mAutoAddOverlay;
     bool        mGenDependencies;
     bool        mNoVersionVectors;

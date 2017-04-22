@@ -59,9 +59,9 @@ void usage(void)
         "   xmlstrings       Print the strings of the given compiled xml assets.\n\n", gProgName);
     fprintf(stderr,
         " %s p[ackage] [-d][-f][-m][-u][-v][-x][-z][-M AndroidManifest.xml] \\\n"
-        "        [-0 extension [-0 extension ...]] [-g tolerance] \\\n"
+        "        [-0 extension [-0 extension ...]] [-g tolerance] [-j jarfile] \\\n"
         "        [--debug-mode] [--min-sdk-version VAL] [--target-sdk-version VAL] \\\n"
-        "        [--app-version VAL] [--app-version-name TEXT] \\\n"
+        "        [--app-version VAL] [--app-version-name TEXT] [--custom-package VAL] \\\n"
         "        [--rename-manifest-package PACKAGE] \\\n"
         "        [--rename-instrumentation-target-package PACKAGE] \\\n"
         "        [--utf16] [--auto-add-overlay] \\\n"
@@ -75,6 +75,7 @@ void usage(void)
         "        [-c CONFIGS] [--preferred-density DENSITY] \\\n"
         "        [--split CONFIGS [--split CONFIGS]] \\\n"
         "        [--feature-of package [--feature-after package]] \\\n"
+        "        [-o] \\\n"
         "        [raw-files-dir [raw-files-dir] ...] \\\n"
         "        [--output-text-symbols DIR]\n"
         "\n"
@@ -112,7 +113,13 @@ void usage(void)
         "   -d  one or more device assets to include, separated by commas\n"
         "   -f  force overwrite of existing files\n"
         "   -g  specify a pixel tolerance to force images to grayscale, default 0\n"
+        "   -j  specify a jar or zip file containing classes to include\n"
         "   -k  junk path of file(s) added\n"
+        "   -m  make package directories under location specified by -J\n"
+        "   -o  create overlay package (ie only resources; expects <overlay-package> in manifest)\n"
+#if 0
+        "   -p  pseudolocalize the default configuration\n"
+#endif
         "   -u  update existing packages (add new, replace older, remove deleted files)\n"
         "   -v  verbose output\n"
         "   -x  create extending (non-application) resource IDs\n"
@@ -123,6 +130,7 @@ void usage(void)
         "   -D  A file to output proguard options for the main dex into.\n"
         "   -F  specify the apk file to output\n"
         "   -I  add an existing package to base include set\n"
+        "   -J  specify where to output R.java resource constant definitions\n"
         "   -M  specify full path to AndroidManifest.xml to include in zip\n"
         "   -P  specify where to output public resource definitions\n"
         "   -S  directory in which to find resources.  Multiple directories will be scanned\n"
@@ -155,6 +163,8 @@ void usage(void)
         "       values will replace any value already in the manifest. By\n"
         "       default, nothing is changed if the manifest already defines\n"
         "       these attributes.\n"
+        "   --custom-package\n"
+        "       generates R.java into a different package.\n"
         "   --auto-add-overlay\n"
         "       Automatically add resources that are only in overlays.\n"
         "   --preferred-density\n"
@@ -346,6 +356,9 @@ int main(int argc, char **argv)
             case 'm':
                 bundle.setMakePackageDirs(true);
                 break;
+            case 'o':
+                bundle.setIsOverlayPackage(true);
+                break;
 #if 0
             case 'p':
                 bundle.setPseudolocalize(true);
@@ -364,7 +377,7 @@ int main(int argc, char **argv)
                 argc--;
                 argv++;
                 if (!argc) {
-                    fprintf(stderr, "AOPT: class injection is not implemented \n");
+                    fprintf(stderr, "AOPT: No argument supplied for '-j' option\n");
                     wantUsage = true;
                     goto bail;
                 }
@@ -430,7 +443,7 @@ int main(int argc, char **argv)
                 argc--;
                 argv++;
                 if (!argc) {
-                    fprintf(stderr, "AOPT: exporting R.java constants is not implemented \n");
+                    fprintf(stderr, "AOPT: No argument supplied for '-J' option\n");
                     wantUsage = true;
                     goto bail;
                 }
@@ -578,6 +591,15 @@ int main(int argc, char **argv)
                     bundle.setReplaceVersion(true);
                 } else if (strcmp(cp, "-values") == 0) {
                     bundle.setValues(true);
+                } else if (strcmp(cp, "-custom-package") == 0) {
+                    argc--;
+                    argv++;
+                    if (!argc) {
+                        fprintf(stderr, "ERROR: No argument supplied for '--custom-package' option\n");
+                        wantUsage = true;
+                        goto bail;
+                    }
+                    bundle.setCustomPackage(argv[0]);
                 } else if (strcmp(cp, "-include-meta-data") == 0) {
                     bundle.setIncludeMetaData(true);
                 } else if (strcmp(cp, "-generate-dependencies") == 0) {

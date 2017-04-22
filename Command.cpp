@@ -221,7 +221,9 @@ int doList(Bundle* bundle)
         static const bool kHaveAndroidOs = false;
 #endif
         const ResTable& res = assets.getResources(false);
-        if (!kHaveAndroidOs) {
+        if (&res == NULL) {
+            printf("\nNo resource table found.\n");
+        } else {
             printf("\nResource table:\n");
             res.print(false);
         }
@@ -2615,12 +2617,10 @@ int doPackage(Bundle* bundle)
         if (bundle->getCustomPackage() == NULL) {
             // Write the R.java file into the appropriate class directory
             // e.g. gen/com/foo/app/R.java
-            err = writeResourceSymbols(bundle, assets, assets->getPackage(), true,
-                    bundle->getBuildSharedLibrary() || bundle->getBuildAppAsSharedLibrary());
+            err = writeResourceSymbols(bundle, assets, assets->getPackage(), true);
         } else {
             const String8 customPkg(bundle->getCustomPackage());
-            err = writeResourceSymbols(bundle, assets, customPkg, true,
-                    bundle->getBuildSharedLibrary() || bundle->getBuildAppAsSharedLibrary());
+            err = writeResourceSymbols(bundle, assets, customPkg, true);
         }
         if (err < 0) {
             goto bail;
@@ -2634,8 +2634,7 @@ int doPackage(Bundle* bundle)
             char* packageString = strtok(libs.lockBuffer(libs.length()), ":");
             while (packageString != NULL) {
                 // Write the R.java file out with the correct package name
-                err = writeResourceSymbols(bundle, assets, String8(packageString), true,
-                        bundle->getBuildSharedLibrary() || bundle->getBuildAppAsSharedLibrary());
+                err = writeResourceSymbols(bundle, assets, String8(packageString), true);
                 if (err < 0) {
                     goto bail;
                 }

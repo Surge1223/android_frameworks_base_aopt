@@ -247,6 +247,8 @@ bool processFile(Bundle* bundle, ZipFile* zip,
 {
     const bool hasData = file->hasData();
 
+    String8 storageName(group->getPath());
+    storageName.convertToResPath();
     ZipEntry* entry;
     bool fromGzip = false;
     status_t result;
