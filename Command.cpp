@@ -221,9 +221,7 @@ int doList(Bundle* bundle)
         static const bool kHaveAndroidOs = false;
 #endif
         const ResTable& res = assets.getResources(false);
-        if (&res == NULL) {
-            printf("\nNo resource table found.\n");
-        } else {
+        if (!kHaveAndroidOs) {
             printf("\nResource table:\n");
             res.print(false);
         }
@@ -847,8 +845,11 @@ int doDump(Bundle* bundle)
         }
 
     } else {
-        asset = assets.openNonAsset(assetsCookie, "AndroidManifest.xml", Asset::ACCESS_BUFFER);
-        if (asset == NULL) {
+     //   Asset* manifestAsset = assets.openNonAsset("AndroidManifest.xml",
+     //                                              Asset::ACCESS_BUFFER);
+        manifestasset = assets.openNonAsset("AndroidManifest.xml",
+                                                   Asset::ACCESS_BUFFER);
+        if (manifestasset == NULL) {
             fprintf(stderr, "ERROR: dump failed because no AndroidManifest.xml found\n");
             goto bail;
         }

@@ -70,7 +70,7 @@ void usage(void)
         "        [-A asset-source-dir]  [-G class-list-file] [-P public-definitions-file] \\\n"
         "        [-D main-dex-class-list-file] \\\n"
         "        [-S resource-sources [-S resource-sources ...]] \\\n"
-        "        [-F apk-file] [R-file-dir] \\\n"
+        "        [-F apk-file] [-J R-file-dir] \\\n"
         "        [--product product1,product2,...] \\\n"
         "        [-c CONFIGS] [--preferred-density DENSITY] \\\n"
         "        [--split CONFIGS [--split CONFIGS]] \\\n"
@@ -80,7 +80,7 @@ void usage(void)
         "        [--output-text-symbols DIR]\n"
         "\n"
         "   Package the android resources.  It will read assets and resources that are\n"
-        "   supplied with the -M -A -S or raw-files-dir arguments.  The -P -F and -R\n"
+        "   supplied with the -M -A -S or raw-files-dir arguments.  The -J -P -F and -R\n"
         "   options control which files are output.\n\n"
         , gProgName);
     fprintf(stderr,
@@ -117,9 +117,6 @@ void usage(void)
         "   -k  junk path of file(s) added\n"
         "   -m  make package directories under location specified by -J\n"
         "   -o  create overlay package (ie only resources; expects <overlay-package> in manifest)\n"
-#if 0
-        "   -p  pseudolocalize the default configuration\n"
-#endif
         "   -u  update existing packages (add new, replace older, remove deleted files)\n"
         "   -v  verbose output\n"
         "   -x  create extending (non-application) resource IDs\n"
@@ -165,6 +162,10 @@ void usage(void)
         "       these attributes.\n"
         "   --custom-package\n"
         "       generates R.java into a different package.\n"
+        "   --extra-packages\n"
+        "       generate R.java for libraries. Separate libraries with ':'.\n"
+        "   --generate-dependencies\n"
+        "       generate dependency files in the same directories for R.java and resource package\n"
         "   --auto-add-overlay\n"
         "       Automatically add resources that are only in overlays.\n"
         "   --preferred-density\n"
@@ -207,6 +208,8 @@ void usage(void)
         "   --app-as-shared-lib\n"
         "       Make an app resource package that also can be loaded as shared library at runtime.\n"
         "       Implies --non-constant-id.\n"
+        "   --app-overlay\n"
+        "       Make an app resource package that is loaded as overlay package .\n"
         "   --error-on-failed-insert\n"
         "       Forces aopt to return an error if it fails to insert values into the manifest\n"
         "       with --debug-mode, --min-sdk-version, --target-sdk-version --version-code\n"
@@ -588,6 +591,8 @@ int main(int argc, char **argv)
                     bundle.setReplaceVersion(true);
                 } else if (strcmp(cp, "-values") == 0) {
                     bundle.setValues(true);
+                } else if (strcmp(cp, "-include-meta-data") == 0) {
+                    bundle.setIncludeMetaData(true);
                 } else if (strcmp(cp, "-custom-package") == 0) {
                     argc--;
                     argv++;
@@ -597,8 +602,15 @@ int main(int argc, char **argv)
                         goto bail;
                     }
                     bundle.setCustomPackage(argv[0]);
-                } else if (strcmp(cp, "-include-meta-data") == 0) {
-                    bundle.setIncludeMetaData(true);
+                } else if (strcmp(cp, "-extra-packages") == 0) {
+                    argc--;
+                    argv++;
+                    if (!argc) {
+                        fprintf(stderr, "ERROR: No argument supplied for '--extra-packages' option\n");
+                        wantUsage = true;
+                        goto bail;
+                    }
+                    bundle.setExtraPackages(argv[0]);
                 } else if (strcmp(cp, "-generate-dependencies") == 0) {
                     bundle.setGenDependencies(true);
                 } else if (strcmp(cp, "-utf16") == 0) {
@@ -691,6 +703,9 @@ int main(int argc, char **argv)
                 } else if (strcmp(cp, "-app-as-shared-lib") == 0) {
                     bundle.setNonConstantId(true);
                     bundle.setBuildAppAsSharedLibrary(true);
+                } else if (strcmp(cp, "-app-overlay") == 0) {
+                    bundle.setNonConstantId(true);
+                    bundle.setBuildAppOverlay(true);
                 } else if (strcmp(cp, "-no-crunch") == 0) {
                     bundle.setUseCrunchCache(true);
                 } else if (strcmp(cp, "-ignore-assets") == 0) {

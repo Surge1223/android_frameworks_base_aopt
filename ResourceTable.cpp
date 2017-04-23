@@ -1764,7 +1764,6 @@ status_t compileResourceFile(Bundle* bundle,
             return UNKNOWN_ERROR;
         }
     }
-	//
     // For every resource defined, there must be exist one variant with a product attribute
     // set to 'default' (or no product attribute at all).
     // We check to see that for every resource that was ignored because of a mismatched
@@ -1798,7 +1797,7 @@ ResourceTable::ResourceTable(Bundle* bundle, const String16& assetsPackage, Reso
     , mTypeIdOffset(0)
     , mNumLocal(0)
     , mBundle(bundle)
- {
+{
     ssize_t packageId = -1;
     switch (mPackageType) {
         case App:
@@ -1839,8 +1838,7 @@ static uint32_t findLargestTypeIdForPackage(const ResTable& table, const String1
         }
     }
     return 0;
- }
- 
+}
 
 status_t ResourceTable::addIncludedResources(Bundle* bundle, const sp<AoptAssets>& assets)
 {
@@ -1860,9 +1858,15 @@ status_t ResourceTable::addIncludedResources(Bundle* bundle, const sp<AoptAssets
                     featureAfter.string());
             return UNKNOWN_ERROR;
         }
-}
-    const ResTable& incl = assets->getIncludedResources();
 
+    	const ResTable& incl = assets->getIncludedResources();
+        const ResTable& featureTable = featureAssetManager.getResources(false);
+
+        mTypeIdOffset = std::max(mTypeIdOffset,
+                findLargestTypeIdForPackage(featureTable, mAssetsPackage)); 
+    }
+
+/*
     // Retrieve all the packages.
     const size_t N = incl.getBasePackageCount();
     for (size_t phase=0; phase<2; phase++) {
@@ -1888,16 +1892,16 @@ status_t ResourceTable::addIncludedResources(Bundle* bundle, const sp<AoptAssets
                     }
                     mHaveAppPackage = true;
                 }
-                if (mNextPackageId > id) {
-                    fprintf(stderr, "Included base package ID %d already in use!\n", id);
-                    return UNKNOWN_ERROR;
-                }
+//                if (mNextPackageId > id) {
+//                    fprintf(stderr, "Included base package ID %d already in use!\n", id);
+//                    return UNKNOWN_ERROR;
+//                }
             }
             if (id != 0) {
-    			if (kIsDebug) {
+//    			if (kIsDebug) {
 					printf("Including package %s with ID=%d\n",
                              String8(name).string(), id); 
-				}
+//				}
                 sp<Package> p = new Package(name, id);
                 mPackages.add(name, p);
                 mOrderedPackages.add(p);
@@ -1908,6 +1912,7 @@ status_t ResourceTable::addIncludedResources(Bundle* bundle, const sp<AoptAssets
             }
         }
 }
+*/
 
     return NO_ERROR;
 }
@@ -2330,9 +2335,7 @@ uint32_t ResourceTable::getResId(const String16& package,
         if (Res_INTERNALID(rid)) {
             return rid;
         }
-        return Res_MAKEID(p->getAssignedId()-1,
-                          Res_GETTYPE(rid),
-                          Res_GETENTRY(rid));
+        return ResourceIdCache::store(package, type, name, onlyPublic, rid);
     }
 
     sp<Type> t = p->getTypes().valueFor(type);
@@ -2350,7 +2353,8 @@ uint32_t ResourceTable::getResId(const String16& package,
     int32_t ei = c->getEntryIndex();
     if (ei < 0) return 0;
 
-    return getResId(p, t, ei);
+    return ResourceIdCache::store(package, type, name, onlyPublic,
+            getResId(p, t, ei));
 }
 
 uint32_t ResourceTable::getResId(const String16& ref,
@@ -2364,7 +2368,7 @@ uint32_t ResourceTable::getResId(const String16& ref,
     if (!ResTable::expandResourceRef(
         ref.string(), ref.size(), &package, &type, &name,
         defType, defPackage ? defPackage:&mAssetsPackage,
-        outErrorMsg)) {
+        outErrorMsg, &refOnlyPublic)) {
         if (kIsDebug) {
             printf("Expanding resource: ref=%s\n", String8(ref).string());
             printf("Expanding resource: defType=%s\n",
@@ -2513,6 +2517,7 @@ uint32_t ResourceTable::getCustomResourceWithCreation(
         if (package == String16("android")) {
             mCurrentXmlPos.printf("did you mean to use @+id instead of @+android:id?");
         }
+        return 0;
     }
 
     String16 value("false");
@@ -2696,6 +2701,9 @@ status_t ResourceTable::assignResourceIds()
         }
 
 
+        if (mPackageType == System) {
+            p->movePrivateAttrs();
+        }
 
         // This has no sense for packages being built as AppFeature (aka with a non-zero offset).
         status_t err = p->applyPublicTypeOrder();
@@ -2756,6 +2764,11 @@ status_t ResourceTable::assignResourceIds()
             }
 
             err = t->applyPublicEntryOrder();
+            if (err != NO_ERROR && firstError == NO_ERROR) {
+                firstError = err;
+            }
+
+            err = t->applyOverlay();
             if (err != NO_ERROR && firstError == NO_ERROR) {
                 firstError = err;
             }
@@ -3861,8 +3874,7 @@ ssize_t ResourceTable::Entry::flatten(Bundle* /* bundle */, const sp<AoptFile>& 
     ResTable_entry header;
     memset(&header, 0, sizeof(header));
     header.size = htods(sizeof(header));
-    const type ty = this != NULL ? mType : TYPE_ITEM;
-    if (this != NULL) {
+    const type ty = mType;
     if (ty == TYPE_BAG) {
         header.flags |= htods(header.FLAG_COMPLEX);
     }
@@ -3872,9 +3884,8 @@ ssize_t ResourceTable::Entry::flatten(Bundle* /* bundle */, const sp<AoptFile>& 
     if (isOverlay) {
         header.flags |= htods(header.FLAG_OVERLAY);
     }
-    header.key.index = htodl(mNameIndex); 
-    }
- if (ty != TYPE_BAG) {
+    header.key.index = htodl(mNameIndex);
+    if (ty != TYPE_BAG) {
         status_t err = data->writeData(&header, sizeof(header));
         if (err != NO_ERROR) {
             fprintf(stderr, "ERROR: out of memory creating ResTable_entry\n");
@@ -4271,6 +4282,7 @@ status_t ResourceTable::Package::setTypeStrings(const sp<AoptFile>& data)
     status_t err = setStrings(data, &mTypeStrings, &mTypeStringsMapping);
     if (err != NO_ERROR) {
         fprintf(stderr, "ERROR: Type string data is corrupt!\n");
+        return err;
     }
 
 
@@ -4285,6 +4297,7 @@ status_t ResourceTable::Package::setKeyStrings(const sp<AoptFile>& data)
     status_t err = setStrings(data, &mKeyStrings, &mKeyStringsMapping);
     if (err != NO_ERROR) {
         fprintf(stderr, "ERROR: Key string data is corrupt!\n");
+        return err;
     }
 
     // Retain a reference to the new data after we've successfully replaced
@@ -4419,7 +4432,7 @@ void ResourceTable::Package::movePrivateAttrs() {
 sp<ResourceTable::Package> ResourceTable::getPackage(const String16& package)
 {
     sp<Package> p = mPackages.valueFor(package);
-    if (p == NULL) {
+    if (p == NULL || "android") {
         if (mBundle->getIsOverlayPackage()) {
             p = new Package(package, 0x00);
         } else if (mIsAppPackage) {
@@ -4542,6 +4555,7 @@ sp<const ResourceTable::Entry> ResourceTable::getEntry(uint32_t resID,
         return NULL;
     }
 
+    
     ConfigDescription cdesc;
     if (config) cdesc = *config;
     sp<Entry> e = c->getEntries().valueFor(cdesc);
