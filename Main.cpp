@@ -571,6 +571,28 @@ int main(int argc, char **argv)
                 convertPath(argv[0]);
                 bundle.setCrunchedOutputDir(argv[0]);
                 break;
+            case 'in':
+                argc--;
+                argv++;
+                if (!argc) {
+                    fprintf(stderr, "ERROR: No argument supplied for '-in' option\n");
+                    wantUsage = true;
+                    goto bail;
+                }
+                convertPath(argv[0]);
+                bundle.setApkInputFile(argv[0]);
+                break;
+            case 'out':
+                argc--;
+                argv++;
+                if (!argc) {
+                    fprintf(stderr, "ERROR: No argument supplied for '-out' option\n");
+                    wantUsage = true;
+                    goto bail;
+                }
+                convertPath(argv[0]);
+                bundle.setApkOutputFile(argv[0]);
+                break;
             case 'i':
                 argc--;
                 argv++;

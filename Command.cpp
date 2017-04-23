@@ -2790,8 +2790,8 @@ int doApk(Bundle* bundle)
 {
     fprintf(stdout, "Compiling Package: %s\n", bundle->getApkInputFile());
     fprintf(stdout, "\tOutput file: %s\n", bundle->getApkOutputFile());
-  	String8 output = buildApkName(String8(outputAPKFile));
-    String8 input(bundle->getOutputAPKFile());
+    String8 output(bundle->getApkOutputFile());
+    String8 input(bundle->getApkInputFile());
     return NO_ERROR;
 }
 
