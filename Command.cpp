@@ -521,7 +521,7 @@ struct FeatureGroup {
     /**
      * Explicit features defined in the group
      */
-    KeyedVector<String8, bool> features;
+    KeyedVector<String8, Feature> features;
 
     /**
      * OpenGL ES version required
@@ -540,7 +540,7 @@ static bool hasFeature(const char* name, const FeatureGroup& grp,
 }
 
 static void addImpliedFeature(KeyedVector<String8, ImpliedFeature>* impliedFeatures,
-                              const char* name, const char* reason, bool sdk23) {
+                              const char* name, const String8& reason, bool sdk23) {
     String8 name8(name);
     ssize_t idx = impliedFeatures->indexOfKey(name8);
     if (idx < 0) {
@@ -553,7 +553,7 @@ static void addImpliedFeature(KeyedVector<String8, ImpliedFeature>* impliedFeatu
     if (feature->impliedBySdk23 && !sdk23) {
         feature->impliedBySdk23 = false;
     }
-    feature->reasons.add(String8(reason));
+    feature->reasons.add(reason);
 }
 
 static void printFeatureGroupImpl(const FeatureGroup& grp,
@@ -2767,6 +2767,48 @@ int runInDaemonMode(Bundle* bundle) {
             bundle->setSingleCrunchOutputFile(outputFile.c_str());
             std::cout << "Crunching " << inputFile << std::endl;
             if (doSingleCrunch(bundle) != NO_ERROR) {
+                std::cout << "Error" << std::endl;
+            }
+            std::cout << "Done" << std::endl;
+        } else {
+            // in case of invalid command, just bail out.
+            std::cerr << "Unknown command" << std::endl;
+            return -1;
+        }
+    }
+    return -1;
+}
+
+
+/*
+ * Do Batch Compile
+ * PRECONDITIONS
+ *  -in flag points to a source directory containing drawable* folders *  -i points to a single png file
+ *  -out points to a output dir
+ */
+int doApk(Bundle* bundle)
+{
+    fprintf(stdout, "Compiling Package: %s\n", bundle->getApkInputFile());
+    fprintf(stdout, "\tOutput file: %s\n", bundle->getApkOutputFile());
+  	String8 output = buildApkName(String8(outputAPKFile));
+    String8 input(bundle->getOutputAPKFile());
+    return NO_ERROR;
+}
+
+int doInDaemonMode(Bundle* bundle) {
+    std::cout << "Ready" << std::endl;
+    for (std::string cmd; std::getline(std::cin, cmd);) {
+        if (cmd == "quit") {
+            return NO_ERROR;
+        } else if (cmd == "o") {
+            // Two argument compile
+            std::string inputFile, outputFile;
+            std::getline(std::cin, inputFile);
+            std::getline(std::cin, outputFile);
+            bundle->setApkInputFile(inputFile.c_str());
+            bundle->setApkOutputFile(outputFile.c_str());
+            std::cout << "Compiling Overlay " << inputFile << std::endl;
+            if (doApk(bundle) != NO_ERROR) {
                 std::cout << "Error" << std::endl;
             }
             std::cout << "Done" << std::endl;

@@ -61,7 +61,7 @@ void usage(void)
         "   xmlstrings       Print the strings of the given compiled xml assets.\n\n", gProgName);
     fprintf(stderr,
         " %s p[ackage] [-d][-f][-m][-u][-v][-x][-z][-M AndroidManifest.xml] \\\n"
-        "        [-0 extension [-0 extension ...]] [-g tolerance] [-j jarfile] \\\n"
+        "        [-0 extension [-0 extension ...]] [-g tolerance] \\\n"
         "        [--debug-mode] [--min-sdk-version VAL] [--target-sdk-version VAL] \\\n"
         "        [--app-version VAL] [--app-version-name TEXT] [--custom-package VAL] \\\n"
         "        [--rename-manifest-package PACKAGE] \\\n"
@@ -273,7 +273,7 @@ void removeUsage(void) {
 void overlayUsage(void) {
     header();
     fprintf(stderr,
-        " %s b[atch] [-v] -in app-dir(s) ... -out output-folder ...\n"
+        " aopt b[atch] [-v] -in app-dir(s) ... -out output-folder ...\n"
         "   Create bactch overlay apks on one or several resource folders\n"
         "   and store the results in the output folder.\n\n");
 }
