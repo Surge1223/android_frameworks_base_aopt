@@ -345,18 +345,13 @@ static status_t makeFileResources(Bundle* bundle, const sp<AoptAssets>& assets,
         }
         String8 resPath = it.getPath();
         resPath.convertToResPath();
-        status_t result = table->addEntry(SourcePos(it.getPath(), 0),
-                        String16(assets->getPackage()),
+        table->addEntry(SourcePos(it.getPath(), 0), String16(assets->getPackage()),
                         type16,
                         baseName,
                         String16(resPath),
                         NULL,
                         &it.getParams());
-        if (result != NO_ERROR) {
-            hasErrors = true;
-        } else {
-            assets->addResource(it.getLeafName(), resPath, it.getFile(), type8);
-        }
+        assets->addResource(it.getLeafName(), resPath, it.getFile(), type8);
     }
 
     return hasErrors ? STATUST(UNKNOWN_ERROR) : NO_ERROR;
@@ -1052,6 +1047,7 @@ static ssize_t extractPlatformBuildVersion(AssetManager& assets, Bundle* bundle)
         return NO_ERROR;
     }
 
+    ResXMLTree tree;
     Asset* asset = assets.openNonAsset(cookie, "AndroidManifest.xml", Asset::ACCESS_STREAMING);
     if (asset == NULL) {
         fprintf(stderr, "ERROR: Platform AndroidManifest.xml not found\n");
@@ -1060,16 +1056,11 @@ static ssize_t extractPlatformBuildVersion(AssetManager& assets, Bundle* bundle)
 
     ssize_t result = NO_ERROR;
 
-    // Create a new scope so that ResXMLTree is destroyed before we delete the memory over
-    // which it iterates (asset).
-    {
-        ResXMLTree tree;
-        if (tree.setTo(asset->getBuffer(true), asset->getLength()) != NO_ERROR) {
-            fprintf(stderr, "ERROR: Platform AndroidManifest.xml is corrupt\n");
-            result = UNKNOWN_ERROR;
-        } else {
-            result = extractPlatformBuildVersion(tree, bundle);
-        }
+    if (tree.setTo(asset->getBuffer(true), asset->getLength()) != NO_ERROR) {
+        fprintf(stderr, "ERROR: Platform AndroidManifest.xml is corrupt\n");
+        result = UNKNOWN_ERROR;
+    } else {
+        result = extractPlatformBuildVersion(tree, bundle);
     }
 
     delete asset;

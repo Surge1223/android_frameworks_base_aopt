@@ -1983,7 +1983,7 @@ status_t ResourceTable::addEntry(const SourcePos& sourcePos,
     if (rid != 0) {
         sourcePos.error("Resource entry %s/%s is already defined in package %s.",
                 String8(type).string(), String8(name).string(), String8(package).string());
-        return NO_ERROR;
+        return UNKNOWN_ERROR;
     }
     
     sp<Entry> e = getEntry(package, type, name, sourcePos, overwrite,
@@ -2018,7 +2018,7 @@ status_t ResourceTable::startBag(const SourcePos& sourcePos,
     if (rid != 0) {
         sourcePos.error("Resource entry %s/%s is already defined in package %s.",
                 String8(type).string(), String8(name).string(), String8(package).string());
-        return NO_ERROR;
+        return UNKNOWN_ERROR;
     }
 
     if (overlay && !mBundle->getAutoAddOverlay() && !hasBagOrEntry(package, type, name)) {
@@ -2332,9 +2332,6 @@ uint32_t ResourceTable::getResId(const String16& package,
             }
         }
 
-        if (Res_INTERNALID(rid)) {
-            return rid;
-        }
         return ResourceIdCache::store(package, type, name, onlyPublic, rid);
     }
 
@@ -2364,7 +2361,7 @@ uint32_t ResourceTable::getResId(const String16& ref,
                                  bool onlyPublic) const
 {
     String16 package, type, name;
-    bool refOnlyPublic = false;
+    bool refOnlyPublic = true;
     if (!ResTable::expandResourceRef(
         ref.string(), ref.size(), &package, &type, &name,
         defType, defPackage ? defPackage:&mAssetsPackage,
@@ -2701,7 +2698,7 @@ status_t ResourceTable::assignResourceIds()
         }
 
 
-        if (mPackageType == System) {
+        if (mPackageType == System || mPackageType == AppOverlay) {
             p->movePrivateAttrs();
         }
 
@@ -2740,7 +2737,7 @@ status_t ResourceTable::assignResourceIds()
         }
 
         uint32_t typeIdOffset = 0;
-        if (mPackageType == AppFeature && p->getName() == mAssetsPackage) {
+        if (mPackageType == AppFeature || mPackageType == AppOverlay && p->getName() == mAssetsPackage) {
             typeIdOffset = mTypeIdOffset;
         }
 
@@ -2751,7 +2748,7 @@ status_t ResourceTable::assignResourceIds()
         // Auto-generated ID resources won't apply the type ID offset correctly unless
         // the offset is applied here first.
         // b/30607637
-        if (mPackageType == AppFeature && p->getName() == mAssetsPackage) {
+        if (mPackageType == AppFeature || mPackageType == AppOverlay && p->getName() == mAssetsPackage) {
             sp<Type> id = p->getType(String16("id"), unknown);
         }
 
@@ -3981,14 +3978,14 @@ status_t ResourceTable::Type::addPublic(const SourcePos& sourcePos,
                                         const String16& name,
                                         const uint32_t ident)
 {
-#if 0
+    #if 0
     int32_t entryIdx = Res_GETENTRY(ident);
     if (entryIdx < 0) {
         sourcePos.error("Public resource %s/%s has an invalid 0 identifier (0x%08x).\n",
                 String8(mName).string(), String8(name).string(), ident);
         return UNKNOWN_ERROR;
     }
- #endif
+    #endif
 
     int32_t typeIdx = Res_GETTYPE(ident);
     if (typeIdx >= 0) {
@@ -5006,9 +5003,9 @@ status_t ResourceTable::modifyForCompat(const Bundle* bundle,
         newConfig.sdkVersion = sdkVersionToGenerate;
         sp<AoptFile> newFile = new AoptFile(target->getSourceFile(),
                 AoptGroupEntry(newConfig), target->getResourceType());
-        String8 resPath = String8::format("res/%s/%s.xml",
+        String8 resPath = String8::format("res/%s/%s",
                 newFile->getGroupEntry().toDirName(target->getResourceType()).string(),
-                String8(resourceName).string());
+                target->getSourceFile().getPathLeaf().string());
         resPath.convertToResPath();
 
         // Add a resource table entry.

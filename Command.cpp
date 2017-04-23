@@ -521,7 +521,7 @@ struct FeatureGroup {
     /**
      * Explicit features defined in the group
      */
-    KeyedVector<String8, Feature> features;
+    KeyedVector<String8, bool> features;
 
     /**
      * OpenGL ES version required
@@ -540,7 +540,7 @@ static bool hasFeature(const char* name, const FeatureGroup& grp,
 }
 
 static void addImpliedFeature(KeyedVector<String8, ImpliedFeature>* impliedFeatures,
-                              const char* name, const String8& reason, bool sdk23) {
+                              const char* name, const char* reason, bool sdk23) {
     String8 name8(name);
     ssize_t idx = impliedFeatures->indexOfKey(name8);
     if (idx < 0) {
@@ -553,7 +553,7 @@ static void addImpliedFeature(KeyedVector<String8, ImpliedFeature>* impliedFeatu
     if (feature->impliedBySdk23 && !sdk23) {
         feature->impliedBySdk23 = false;
     }
-    feature->reasons.add(reason);
+    feature->reasons.add(String8(reason));
 }
 
 static void printFeatureGroupImpl(const FeatureGroup& grp,
@@ -775,6 +775,7 @@ int doDump(Bundle* bundle)
     }
 
     // Source for AndroidManifest.xml
+    const String8 manifestFile = String8::format("%s@AndroidManifest.xml", filename);
 
     // The dynamicRefTable can be null if there are no resources for this asset cookie.
     // This fine.
@@ -844,10 +845,7 @@ int doDump(Bundle* bundle)
         }
 
     } else {
-     //   Asset* manifestAsset = assets.openNonAsset("AndroidManifest.xml",
-     //                                              Asset::ACCESS_BUFFER);
-        asset = assets.openNonAsset("AndroidManifest.xml",
-                                                   Asset::ACCESS_BUFFER);
+        asset = assets.openNonAsset(assetsCookie, "AndroidManifest.xml", Asset::ACCESS_BUFFER);
         if (asset == NULL) {
             fprintf(stderr, "ERROR: dump failed because no AndroidManifest.xml found\n");
             goto bail;
@@ -1187,7 +1185,7 @@ int doDump(Bundle* bundle)
                     continue;
                 }
                 depth++;
-		const String8 manifestFile = String8::format("%s@AndroidManifest.xml", filename);
+
                 const char16_t* ctag16 = tree.getElementName(&len);
                 if (ctag16 == NULL) {
                     fprintf(stderr, "ERROR: failed to get XML element name (bad string pool)\n");

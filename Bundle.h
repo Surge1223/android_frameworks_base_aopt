@@ -29,7 +29,8 @@ typedef enum Command {
     kCommandPackage,
     kCommandCrunch,
     kCommandSingleCrunch,
-    kCommandDaemon
+    kCommandDaemon,
+	kCommandBatch
 } Command;
 
 /*
@@ -55,7 +56,7 @@ public:
           mCompressionMethod(0), mJunkPath(false), mOutputAPKFile(NULL),
           mManifestPackageNameOverride(NULL), mInstrumentationPackageNameOverride(NULL),
           mIsOverlayPackage(false),
-          mAutoAddOverlay(true), mGenDependencies(false), mNoVersionVectors(false),
+          mAutoAddOverlay(false), mGenDependencies(false), mNoVersionVectors(false),
           mCrunchedOutputDir(NULL), mProguardFile(NULL), mMainDexProguardFile(NULL),
           mAndroidManifestFile(NULL), mPublicOutputFile(NULL),
           mRClassDir(NULL), mResourceIntermediatesDir(NULL), mManifestMinSdkVersion(NULL),
@@ -225,6 +226,10 @@ public:
     void setBuildAppOverlay(bool val) { mBuildAppOverlay = val; }
     void setNoVersionVectors(bool val) { mNoVersionVectors = val; }
     bool getNoVersionVectors() const { return mNoVersionVectors; }
+    const char* getApkInputFile() const { return mApkInputFile; }
+    void setApkInputFile(const char* val) { mApkInputFile = val; }
+    const char* getApkOutputFile() const { return mApkOutputFile; }
+    void setApkOutputFile(const char* val) { mApkOutputFile = val; }
 
     /*
      * Set and get the file specification.
@@ -243,15 +248,15 @@ public:
         mArgc -= n;
     }
 
+#if 0
     /*
      * Package count.  Nothing to do with anything else here; this is
      * just a convenient place to stuff it so we don't have to pass it
      * around everywhere.
      */
-#if 0
     int getPackageCount(void) const { return mPackageCount; }
     void setPackageCount(int val) { mPackageCount = val; }
-#endif 
+#endif
     /* Certain features may only be available on a specific SDK level or
      * above. SDK levels that have a non-numeric identifier are assumed
      * to be newer than any SDK level that has a number designated.

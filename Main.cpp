@@ -12,6 +12,8 @@
 #include <utils/List.h>
 #include <utils/Errors.h>
 
+#include <stdio.h>
+#include <string.h>
 #include <cstdlib>
 #include <getopt.h>
 #include <cassert>
@@ -100,6 +102,10 @@ void usage(void)
     fprintf(stderr,
         " %s v[ersion]\n"
         "   Print program version.\n\n", gProgName);
+    fprintf(stderr,
+        " %s b[atch] [-v] -in app-dir(s) ... -out output-folder ...\n"
+        "   Create bactch overlay apks on one or several resource folders\n"
+        "   and store the results in the output folder.\n\n", gProgName);
     fprintf(stderr,
         " Modifiers:\n"
         "   -a  print Android-specific data (resources, manifest) when listing\n"
@@ -231,6 +237,46 @@ void usage(void)
         gDefaultIgnoreAssets);
 }
 
+void header(void) {
+    fprintf(stderr, "==================================== \n");
+    fprintf(stderr, "Android Overlay Packaging Tool\n");
+    fprintf(stderr, "==================================== \n");
+}
+
+void dumpUsage(void) {
+    header();
+    fprintf(stderr,
+    " aopt d[ump] [--values] [--include-meta-data] WHAT file.{apk} [asset [asset ...]]\n"
+            "   strings          Print the contents of the resource table string pool in the APK.\n"
+            "   badging          Print the label and icon for the app declared in APK.\n"
+            "   permissions      Print the permissions from the APK.\n"
+            "   resources        Print the resource table from the APK.\n"
+            "   configurations   Print the configurations in the APK.\n"
+            "   xmltree          Print the compiled xmls in the given assets.\n"
+            "   xmlstrings       Print the strings of the given compiled xml assets.\n\n");
+}
+
+void addUsage(void) {
+    header();
+    fprintf(stderr,
+            " aopt a[dd] [-v] file.{zip,jar,apk} file1 [file2 ...]\n"
+            "   Add specified files to Zip-compatible archive.\n\n");
+}
+
+void removeUsage(void) {
+    header();
+    fprintf(stderr,
+            " aopt r[emove] [-v] file.{zip,jar,apk} file1 [file2 ...]\n"
+            "   Delete specified files from Zip-compatible archive.\n\n");
+}
+
+void overlayUsage(void) {
+    header();
+    fprintf(stderr,
+        " %s b[atch] [-v] -in app-dir(s) ... -out output-folder ...\n"
+        "   Create bactch overlay apks on one or several resource folders\n"
+        "   and store the results in the output folder.\n\n");
+}
 /*
  * Dispatch the command.
  */
@@ -251,6 +297,7 @@ int handleCommand(Bundle* bundle)
     case kCommandCrunch:       return doCrunch(bundle);
     case kCommandSingleCrunch: return doSingleCrunch(bundle);
     case kCommandDaemon:       return runInDaemonMode(bundle);
+    case kCommandBatch:        return doInDaemonMode(bundle);
     default:
         fprintf(stderr, "%s: requested command not yet supported\n", gProgName);
         return 1;
@@ -263,34 +310,64 @@ int handleCommand(Bundle* bundle)
 int main(int argc, char **argv)
 {
     char *prog = argv[0];
+    
     Bundle bundle;
     bool wantUsage = false;
     bool wantHelp = false;
     int result = 1;    // pessimistically assume an error.
     int tolerance = 0;
+  	char str[80];
+  	static const char* OverlayPackage = "-overlay";  
 
     /* default to compression */
     bundle.setCompressionMethod(ZipEntry::kCompressDeflated);
 
     if (argc < 2) {
-	fprintf(stderr, "==================================== \n");
-    fprintf(stderr, "Android Overlay Packaging Tool\n");
-	fprintf(stderr, "==================================== \n");	
-    fprintf(stderr,"   No arguments provided 				\n");
-	printf("   type --help for help \n");
+    header();
+    fprintf(stderr,"                                        \n");
+    fprintf(stderr,"   No arguments provided                \n");
+    fprintf(stderr,"                                        \n");
+    fprintf(stderr,"   try:                                  \n");
+    fprintf(stderr,"                                        \n");
+    fprintf(stderr,"   aopt list                            \n");
+    fprintf(stderr,"   aopt dump                            \n");
+    fprintf(stderr,"   aopt add                             \n");
+    fprintf(stderr,"   aopt remove                          \n");
+    fprintf(stderr,"   aopt package                         \n");
+    fprintf(stderr,"   aopt overlay                         \n");
+    fprintf(stderr,"   aopt version                         \n");
+	printf("   type any with --help for help \n");
         return -1;
     }
 
     if (argv[1][0] == 'v')
-        bundle.setCommand(kCommandVersion);
+    bundle.setCommand(kCommandVersion);
     else if (argv[1][0] == 'd')
-        bundle.setCommand(kCommandDump);
+    if (strcmp(argv[2], "--help") == 0)
+        dumpUsage();
+        else {
+            bundle.setCommand(kCommandDump);
+        }
     else if (argv[1][0] == 'l')
         bundle.setCommand(kCommandList);
     else if (argv[1][0] == 'a')
+    if (strcmp(argv[2], "--help") == 0)
+        addUsage();
+    else {
         bundle.setCommand(kCommandAdd);
+    }
     else if (argv[1][0] == 'r')
-        bundle.setCommand(kCommandRemove);
+    if (strcmp(argv[2], "--help") == 0)
+            removeUsage();
+    else {
+         bundle.setCommand(kCommandRemove);
+    }
+    else if (argv[1][0] == 'b')
+    if (strcmp(argv[2], "--help") == 0)
+            removeUsage();
+    else {
+         bundle.setCommand(kCommandBatch);
+    }
     else if (argv[1][0] == 'p')
         bundle.setCommand(kCommandPackage);
     else if (argv[1][0] == 'c')
@@ -704,8 +781,12 @@ int main(int argc, char **argv)
                     bundle.setNonConstantId(true);
                     bundle.setBuildAppAsSharedLibrary(true);
                 } else if (strcmp(cp, "-app-overlay") == 0) {
-                    bundle.setNonConstantId(true);
+  					strcpy (str, String8(argv[0]));
+  					strcat(str, OverlayPackage);
+  					puts (str);
                     bundle.setBuildAppOverlay(true);
+                    bundle.setExtending(true);
+                    bundle.setInstrumentationPackageNameOverride(str);
                 } else if (strcmp(cp, "-no-crunch") == 0) {
                     bundle.setUseCrunchCache(true);
                 } else if (strcmp(cp, "-ignore-assets") == 0) {
@@ -770,3 +851,4 @@ bail:
     //printf("--> returning %d\n", result);
     return result;
 }
+
