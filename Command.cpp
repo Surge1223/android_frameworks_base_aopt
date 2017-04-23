@@ -2617,10 +2617,10 @@ int doPackage(Bundle* bundle)
         if (bundle->getCustomPackage() == NULL) {
             // Write the R.java file into the appropriate class directory
             // e.g. gen/com/foo/app/R.java
-            err = writeResourceSymbols(bundle, assets, assets->getPackage(), true);
+            err = writeResourceSymbols(bundle, assets, assets->getPackage(),  true, false);
         } else {
             const String8 customPkg(bundle->getCustomPackage());
-            err = writeResourceSymbols(bundle, assets, customPkg, true);
+            err = writeResourceSymbols(bundle, assets, customPkg,  true, false);
         }
         if (err < 0) {
             goto bail;
@@ -2634,7 +2634,7 @@ int doPackage(Bundle* bundle)
             char* packageString = strtok(libs.lockBuffer(libs.length()), ":");
             while (packageString != NULL) {
                 // Write the R.java file out with the correct package name
-                err = writeResourceSymbols(bundle, assets, String8(packageString), true);
+                err = writeResourceSymbols(bundle, assets, String8(packageString),  true, false);
                 if (err < 0) {
                     goto bail;
                 }
@@ -2946,3 +2946,4 @@ char CONSOLE_DATA[2925] = {
     32, 32, 46, 32, 32, 46, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32,
     32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 10
   };
+

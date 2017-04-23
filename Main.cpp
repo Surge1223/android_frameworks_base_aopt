@@ -356,9 +356,6 @@ int main(int argc, char **argv)
             case 'm':
                 bundle.setMakePackageDirs(true);
                 break;
-            case 'o':
-                bundle.setIsOverlayPackage(true);
-                break;
 #if 0
             case 'p':
                 bundle.setPseudolocalize(true);

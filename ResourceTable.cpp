@@ -1764,7 +1764,7 @@ status_t compileResourceFile(Bundle* bundle,
             return UNKNOWN_ERROR;
         }
     }
-/*
+	//
     // For every resource defined, there must be exist one variant with a product attribute
     // set to 'default' (or no product attribute at all).
     // We check to see that for every resource that was ignored because of a mismatched
@@ -1788,17 +1788,59 @@ status_t compileResourceFile(Bundle* bundle,
             }
         }
     }
-*/
+
     return hasErrors ? UNKNOWN_ERROR : NO_ERROR;
 }
 
-ResourceTable::ResourceTable(Bundle* bundle, const String16& assetsPackage)
-    : mAssetsPackage(assetsPackage), mNextPackageId(1), mHaveAppPackage(false),
-      mIsAppPackage(!bundle->getExtending()),
-      mNumLocal(0),
-      mBundle(bundle)
-{
+ResourceTable::ResourceTable(Bundle* bundle, const String16& assetsPackage, ResourceTable::PackageType type)
+    : mAssetsPackage(assetsPackage)
+    , mPackageType(type)
+    , mTypeIdOffset(0)
+    , mNumLocal(0)
+    , mBundle(bundle)
+ {
+    ssize_t packageId = -1;
+    switch (mPackageType) {
+        case App:
+        case AppFeature:
+            packageId = 0x7f;
+            break;
+
+        case System:
+            packageId = 0x01;
+            break;
+
+        case SharedLibrary:
+            packageId = 0x00;
+            break;
+
+        case AppOverlay:
+            packageId = 0x00;
+            break;
+
+        default:
+            assert(0);
+            break;
+    }
+    sp<Package> package = new Package(mAssetsPackage, packageId);
+    mPackages.add(assetsPackage, package);
+    mOrderedPackages.add(package);
+
+    // Every resource table always has one first entry, the bag attributes.
+    const SourcePos unknown(String8("????"), 0);
+    getType(mAssetsPackage, String16("attr"), unknown);
 }
+
+static uint32_t findLargestTypeIdForPackage(const ResTable& table, const String16& packageName) {
+    const size_t basePackageCount = table.getBasePackageCount();
+    for (size_t i = 0; i < basePackageCount; i++) {
+        if (packageName == table.getBasePackageName(i)) {
+            return table.getLastTypeIdForPackage(i);
+        }
+    }
+    return 0;
+ }
+ 
 
 status_t ResourceTable::addIncludedResources(Bundle* bundle, const sp<AoptAssets>& assets)
 {
@@ -2247,10 +2289,11 @@ bool ResourceTable::hasResources() const {
     return mNumLocal > 0;
 }
 
-sp<AoptFile> ResourceTable::flatten(Bundle* bundle)
+sp<AoptFile> ResourceTable::flatten(Bundle* bundle, const sp<const ResourceFilter>& filter,
+        const bool isBase)
 {
     sp<AoptFile> data = new AoptFile(String8(), AoptGroupEntry(), String8());
-    status_t err = flatten(bundle, data);
+    status_t err = flatten(bundle, filter, data, isBase);
     return err == NO_ERROR ? data : NULL;
 }
 
@@ -2266,9 +2309,10 @@ uint32_t ResourceTable::getResId(const String16& package,
                                  const String16& name,
                                  bool onlyPublic) const
 {
+    uint32_t id = ResourceIdCache::lookup(package, type, name, onlyPublic);
+    if (id != 0) return id;     // cache hit
     sp<Package> p = mPackages.valueFor(package);
     if (p == NULL) return 0;
-
     // First look for this in the included resources...
     uint32_t specFlags = 0;
     uint32_t rid = mAssets->getIncludedResources()
@@ -2282,7 +2326,7 @@ uint32_t ResourceTable::getResId(const String16& package,
                 return 0;
             }
         }
-        
+
         if (Res_INTERNALID(rid)) {
             return rid;
         }
@@ -2291,8 +2335,6 @@ uint32_t ResourceTable::getResId(const String16& package,
                           Res_GETENTRY(rid));
     }
 
-    sp<Package> p = mPackages.valueFor(package);
-    if (p == NULL) return 0;
     sp<Type> t = p->getTypes().valueFor(type);
     if (t == NULL) return 0;
     sp<ConfigList> c = t->getConfigs().valueFor(name);
@@ -2318,6 +2360,7 @@ uint32_t ResourceTable::getResId(const String16& ref,
                                  bool onlyPublic) const
 {
     String16 package, type, name;
+    bool refOnlyPublic = false;
     if (!ResTable::expandResourceRef(
         ref.string(), ref.size(), &package, &type, &name,
         defType, defPackage ? defPackage:&mAssetsPackage,
@@ -3820,17 +3863,18 @@ ssize_t ResourceTable::Entry::flatten(Bundle* /* bundle */, const sp<AoptFile>& 
     header.size = htods(sizeof(header));
     const type ty = this != NULL ? mType : TYPE_ITEM;
     if (this != NULL) {
-        if (ty == TYPE_BAG) {
-            header.flags |= htods(header.FLAG_COMPLEX);
-        }
-      if (isPublic) {
+    if (ty == TYPE_BAG) {
+        header.flags |= htods(header.FLAG_COMPLEX);
+    }
+    if (isPublic) {
         header.flags |= htods(header.FLAG_PUBLIC);
     }
     if (isOverlay) {
         header.flags |= htods(header.FLAG_OVERLAY);
     }
-    header.key.index = htodl(mNameIndex);
-    if (ty != TYPE_BAG) {
+    header.key.index = htodl(mNameIndex); 
+    }
+ if (ty != TYPE_BAG) {
         status_t err = data->writeData(&header, sizeof(header));
         if (err != NO_ERROR) {
             fprintf(stderr, "ERROR: out of memory creating ResTable_entry\n");
@@ -3926,14 +3970,14 @@ status_t ResourceTable::Type::addPublic(const SourcePos& sourcePos,
                                         const String16& name,
                                         const uint32_t ident)
 {
-    #if 0
+#if 0
     int32_t entryIdx = Res_GETENTRY(ident);
     if (entryIdx < 0) {
         sourcePos.error("Public resource %s/%s has an invalid 0 identifier (0x%08x).\n",
                 String8(mName).string(), String8(name).string(), ident);
         return UNKNOWN_ERROR;
     }
-    #endif
+ #endif
 
     int32_t typeIdx = Res_GETTYPE(ident);
     if (typeIdx >= 0) {
@@ -4389,14 +4433,12 @@ sp<ResourceTable::Package> ResourceTable::getPackage(const String16& package)
         } else {
             p = new Package(package, mNextPackageId);
         }
-        //printf("*** NEW PACKAGE: \"%s\" id=%d\n",
-        //       String8(package).string(), p->getAssignedId());
         mPackages.add(package, p);
         mOrderedPackages.add(p);
         mNextPackageId++;
     }
 
-    if (package != mAssetsPackage && package != String16("android") {
+    if (package != mAssetsPackage && package != String16("android")) {
         return NULL;
     }
     return p;
@@ -4499,7 +4541,7 @@ sp<const ResourceTable::Entry> ResourceTable::getEntry(uint32_t resID,
         fprintf(stderr, "warning: Entry not found for resource #%08x\n", resID);
         return NULL;
     }
-    
+
     ConfigDescription cdesc;
     if (config) cdesc = *config;
     sp<Entry> e = c->getEntries().valueFor(cdesc);
@@ -5249,3 +5291,4 @@ status_t ResourceTable::processBundleFormatImpl(const Bundle* bundle,
     }
     return NO_ERROR;
 }
+

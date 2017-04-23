@@ -45,7 +45,7 @@ aoptSources := \
     XMLNode.cpp \
     ZipEntry.cpp \
     ZipFile.cpp \
-    logstubs.cpp
+    printapk.cpp
 
 aoptTests := \
     tests/AoptConfig_test.cpp \
@@ -176,90 +176,3 @@ LOCAL_MODULE_PATH_64 := $(ANDROID_PRODUCT_OUT)/system/bin
 LOCAL_MULTILIB := both
 
 include $(BUILD_EXECUTABLE)
-
-
-# ==========================================================
-# Setup some common variables for the different build
-# targets here.
-# ==========================================================
-
-include $(CLEAR_VARS)
-aoptHostTests := \
-    tests/AoptConfig_test.cpp \
-    tests/AoptGroupEntry_test.cpp \
-    tests/Pseudolocales_test.cpp \
-    tests/ResourceFilter_test.cpp \
-    tests/ResourceTable_test.cpp
-
-aoptHostStaticLibs := \
-    libandroidfw \
-    libpng \
-    libutils \
-    liblog \
-    libcutils \
-    libexpat \
-    libziparchive-host \
-    libbase
-
-aoptHostCFlags := -D'AOPT_VERSION="android-$(PLATFORM_VERSION)-$(TARGET_BUILD_VARIANT)"'
-aoptHostCFlags += -Wall -Werror
-
-aoptHostLdLibs_linux := -lrt -ldl -lpthread
-
-# Statically link libz for MinGW (Win SDK under Linux),
-# and dynamically link for all others.
-aoptHostStaticLibs_windows := libz
-aoptHostLdLibs_linux += -lz
-aoptHostLdLibs_darwin := -lz
-
-
-# ==========================================================
-# Build the host static library: libaopt
-# ==========================================================
-include $(CLEAR_VARS)
-
-LOCAL_MODULE := libaopt
-LOCAL_MODULE_HOST_OS := darwin linux windows
-LOCAL_CFLAGS := -Wno-format-y2k -DSTATIC_ANDROIDFW_FOR_TOOLS $(aoptHostCFlags)
-LOCAL_CPPFLAGS := $(aoptHostCppFlags)
-LOCAL_CFLAGS_darwin := -D_DARWIN_UNLIMITED_STREAMS
-LOCAL_SRC_FILES := $(aoptSources)
-LOCAL_STATIC_LIBRARIES := $(aoptHostStaticLibs)
-LOCAL_STATIC_LIBRARIES_windows := $(aoptHostStaticLibs_windows)
-
-include $(BUILD_HOST_STATIC_LIBRARY)
-
-# ==========================================================
-# Build the host executable: aopt
-# ==========================================================
-include $(CLEAR_VARS)
-
-LOCAL_MODULE := aopt
-LOCAL_MODULE_HOST_OS := darwin linux windows
-LOCAL_CFLAGS := $(aoptHostCFlags)
-LOCAL_CPPFLAGS := $(aoptHostCppFlags)
-LOCAL_LDLIBS_darwin := $(aoptHostLdLibs_darwin)
-LOCAL_LDLIBS_linux := $(aoptHostLdLibs_linux)
-LOCAL_SRC_FILES := $(aoptMain)
-LOCAL_STATIC_LIBRARIES := libaopt $(aoptHostStaticLibs)
-LOCAL_STATIC_LIBRARIES_windows := $(aoptHostStaticLibs_windows)
-
-include $(BUILD_HOST_EXECUTABLE)
-
-
-# ==========================================================
-# Build the host tests: libaopt_tests
-# ==========================================================
-include $(CLEAR_VARS)
-
-LOCAL_MODULE := libaopt_tests
-LOCAL_CFLAGS := $(aoptHostCFlags)
-LOCAL_CPPFLAGS := $(aoptHostCppFlags)
-LOCAL_LDLIBS_darwin := $(aoptHostLdLibs_darwin)
-LOCAL_LDLIBS_linux := $(aoptHostLdLibs_linux)
-LOCAL_SRC_FILES := $(aoptTests)
-LOCAL_C_INCLUDES := $(LOCAL_PATH)
-LOCAL_STATIC_LIBRARIES := libaopt $(aoptHostStaticLibs)
-LOCAL_STATIC_LIBRARIES_windows := $(aoptHostStaticLibs_windows)
-
-include $(BUILD_HOST_NATIVE_TEST)
