@@ -1,4 +1,4 @@
-#include <ResourceTypes.h>
+#include <androidfw/ResourceTypes.h>
 #include <utils/String8.h>
 #include <utils/String16.h>
 #include <androidfw/ZipUtils.h>
@@ -29,16 +29,11 @@ printapk(int argc, char** argv)
     int fd;
     ssize_t amt;
     off_t size;
-    void* buf;
     ZipFile* zip = NULL;
     status_t result;
     int flags;
     ZipEntry entry;
-    void* cookie;
-    void* resfile;
-    int bufsize;
-    int err;
-
+    void* buf;
     if (argc != 2) {
         return usage();
     }

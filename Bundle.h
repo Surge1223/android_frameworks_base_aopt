@@ -248,9 +248,10 @@ public:
      * just a convenient place to stuff it so we don't have to pass it
      * around everywhere.
      */
+#if 0
     int getPackageCount(void) const { return mPackageCount; }
     void setPackageCount(int val) { mPackageCount = val; }
-
+#endif 
     /* Certain features may only be available on a specific SDK level or
      * above. SDK levels that have a non-numeric identifier are assumed
      * to be newer than any SDK level that has a number designated.

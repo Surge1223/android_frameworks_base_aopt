@@ -1859,7 +1859,7 @@ status_t ResourceTable::addIncludedResources(Bundle* bundle, const sp<AoptAssets
             return UNKNOWN_ERROR;
         }
 
-    	const ResTable& incl = assets->getIncludedResources();
+//    	const ResTable& incl = assets->getIncludedResources();
         const ResTable& featureTable = featureAssetManager.getResources(false);
 
         mTypeIdOffset = std::max(mTypeIdOffset,
@@ -4432,6 +4432,17 @@ void ResourceTable::Package::movePrivateAttrs() {
 sp<ResourceTable::Package> ResourceTable::getPackage(const String16& package)
 {
     sp<Package> p = mPackages.valueFor(package);
+    if (package != mAssetsPackage) {
+        p = new Package(package, 0x00);
+		mBuildAppOverlay = true;
+        return p;
+    }
+    return p;
+}
+/*
+sp<ResourceTable::Package> ResourceTable::getPackage(const String16& package)
+{
+    sp<Package> p = mPackages.valueFor(package);
     if (p == NULL || "android") {
         if (mBundle->getIsOverlayPackage()) {
             p = new Package(package, 0x00);
@@ -4456,7 +4467,7 @@ sp<ResourceTable::Package> ResourceTable::getPackage(const String16& package)
     }
     return p;
 }
-
+*/
 sp<ResourceTable::Type> ResourceTable::getType(const String16& package,
                                                const String16& type,
                                                const SourcePos& sourcePos,

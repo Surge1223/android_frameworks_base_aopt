@@ -1196,9 +1196,15 @@ status_t buildResources(Bundle* bundle, const sp<AoptAssets>& assets, sp<ApkBuil
         assets->setSymbolsPrivatePackage(bundle->getPrivateSymbolsPackage());
     }
 
-
     ResourceTable::PackageType packageType = ResourceTable::App;
-    packageType = ResourceTable::System;
+    if (bundle-> getBuildAppOverlay()) {
+        packageType = ResourceTable::AppOverlay;
+    } else if (bundle->getExtending()) {
+        packageType = ResourceTable::System;
+    } else if (!bundle->getFeatureOfPackage().isEmpty()) {
+        packageType = ResourceTable::AppFeature;
+    }
+
 
     ResourceTable table(bundle, String16(assets->getPackage()), packageType);
     err = table.addIncludedResources(bundle, assets);
@@ -1599,6 +1605,17 @@ status_t buildResources(Bundle* bundle, const sp<AoptAssets>& assets, sp<ApkBuil
     
     if (hasErrors) {
         return UNKNOWN_ERROR;
+    }
+
+ // If we're not overriding the platform build versions,
+    // extract them from the platform APK.
+    if (packageType != ResourceTable::System &&
+            (bundle->getPlatformBuildVersionCode() == "" ||
+            bundle->getPlatformBuildVersionName() == "")) {
+        err = extractPlatformBuildVersion(assets->getAssetManager(), bundle);
+        if (err != NO_ERROR) {
+            return UNKNOWN_ERROR;
+        }
     }
 
     const sp<AoptFile> manifestFile(androidManifestFile->getFiles().valueAt(0));

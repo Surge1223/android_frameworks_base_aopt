@@ -775,7 +775,6 @@ int doDump(Bundle* bundle)
     }
 
     // Source for AndroidManifest.xml
-    const String8 manifestFile = String8::format("%s@AndroidManifest.xml", filename);
 
     // The dynamicRefTable can be null if there are no resources for this asset cookie.
     // This fine.
@@ -847,9 +846,9 @@ int doDump(Bundle* bundle)
     } else {
      //   Asset* manifestAsset = assets.openNonAsset("AndroidManifest.xml",
      //                                              Asset::ACCESS_BUFFER);
-        manifestasset = assets.openNonAsset("AndroidManifest.xml",
+        asset = assets.openNonAsset("AndroidManifest.xml",
                                                    Asset::ACCESS_BUFFER);
-        if (manifestasset == NULL) {
+        if (asset == NULL) {
             fprintf(stderr, "ERROR: dump failed because no AndroidManifest.xml found\n");
             goto bail;
         }
@@ -1188,7 +1187,7 @@ int doDump(Bundle* bundle)
                     continue;
                 }
                 depth++;
-
+		const String8 manifestFile = String8::format("%s@AndroidManifest.xml", filename);
                 const char16_t* ctag16 = tree.getElementName(&len);
                 if (ctag16 == NULL) {
                     fprintf(stderr, "ERROR: failed to get XML element name (bad string pool)\n");
