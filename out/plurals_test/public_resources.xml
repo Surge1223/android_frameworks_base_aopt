@@ -1,0 +1,15 @@
+<!-- This file contains <public> resource definitions for all
+     resources that were generated from the source data. -->
+
+<resources>
+
+  <!-- PRIVATE SECTION.  These resources have not been declared public.
+       You can make them public my moving these lines into a file in res/values. -->
+
+  <!-- Declared at tests/plurals/res/values/strings.xml:2 -->
+  <public type="string" name="ok" id="0x00020000" />
+
+  <!-- Declared at tests/plurals/res/values/strings.xml:3 -->
+  <public type="plurals" name="a_plural" id="0x00030000" />
+
+</resources>

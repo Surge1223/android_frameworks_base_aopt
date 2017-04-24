@@ -30,7 +30,7 @@ typedef enum Command {
     kCommandCrunch,
     kCommandSingleCrunch,
     kCommandDaemon,
-	kCommandBatch
+    kCommandBatch
 } Command;
 
 /*
@@ -55,7 +55,7 @@ public:
           mWantUTF16(false), mValues(false), mIncludeMetaData(false),
           mCompressionMethod(0), mJunkPath(false), mOutputAPKFile(NULL),
           mManifestPackageNameOverride(NULL), mInstrumentationPackageNameOverride(NULL),
-          mIsOverlayPackage(false),
+          mIsOverlayPackage(false), mApkInputFile(NULL), mApkOutputFile(NULL), 
           mAutoAddOverlay(false), mGenDependencies(false), mNoVersionVectors(false),
           mCrunchedOutputDir(NULL), mProguardFile(NULL), mMainDexProguardFile(NULL),
           mAndroidManifestFile(NULL), mPublicOutputFile(NULL),
@@ -179,7 +179,6 @@ public:
     const android::String8& getFeatureOfPackage() const { return mFeatureOfPackage; }
     void setFeatureAfterPackage(const char* str) { mFeatureAfterPackage = str; }
     const android::String8& getFeatureAfterPackage() const { return mFeatureAfterPackage; }
-
     const char*  getManifestMinSdkVersion() const { return mManifestMinSdkVersion; }
     void setManifestMinSdkVersion(const char*  val) { mManifestMinSdkVersion = val; }
     const char*  getMinSdkVersion() const { return mMinSdkVersion; }
@@ -307,6 +306,8 @@ private:
     const char* mManifestPackageNameOverride;
     const char* mInstrumentationPackageNameOverride;
     bool        mIsOverlayPackage;
+    const char* mApkInputFile;
+    const char* mApkOutputFile;
     bool        mAutoAddOverlay;
     bool        mGenDependencies;
     bool        mNoVersionVectors;

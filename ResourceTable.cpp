@@ -505,14 +505,6 @@ static status_t compileAttribute(const sp<AoptFile>& in,
                 attr.hasErrors = true;
             }
 
-            // Make sure an id is defined for this enum/flag identifier...
-            if (!attr.hasErrors && !outTable->hasBagOrEntry(itemIdent, &id16, &myPackage)) {
-                err = outTable->startBag(SourcePos(in->getPrintableSource(), block.getLineNumber()),
-                                         myPackage, id16, itemIdent, String16(), NULL);
-                if (err != NO_ERROR) {
-                    attr.hasErrors = true;
-                }
-            }
             if (!attr.hasErrors) {
                 if (enumOrFlagsComment.size() == 0) {
                     enumOrFlagsComment.append(mayOrMust(attr.type,
@@ -1788,7 +1780,7 @@ status_t compileResourceFile(Bundle* bundle,
         }
     }
 
-    return hasErrors ? UNKNOWN_ERROR : NO_ERROR;
+    return hasErrors ? STATUST(UNKNOWN_ERROR) : NO_ERROR;
 }
 
 ResourceTable::ResourceTable(Bundle* bundle, const String16& assetsPackage, ResourceTable::PackageType type)
@@ -1859,7 +1851,6 @@ status_t ResourceTable::addIncludedResources(Bundle* bundle, const sp<AoptAssets
             return UNKNOWN_ERROR;
         }
 
-//    	const ResTable& incl = assets->getIncludedResources();
         const ResTable& featureTable = featureAssetManager.getResources(false);
 
         mTypeIdOffset = std::max(mTypeIdOffset,
@@ -2316,8 +2307,7 @@ uint32_t ResourceTable::getResId(const String16& package,
 {
     uint32_t id = ResourceIdCache::lookup(package, type, name, onlyPublic);
     if (id != 0) return id;     // cache hit
-    sp<Package> p = mPackages.valueFor(package);
-    if (p == NULL) return 0;
+
     // First look for this in the included resources...
     uint32_t specFlags = 0;
     uint32_t rid = mAssets->getIncludedResources()
@@ -2332,9 +2322,12 @@ uint32_t ResourceTable::getResId(const String16& package,
             }
         }
 
+        
         return ResourceIdCache::store(package, type, name, onlyPublic, rid);
     }
 
+    sp<Package> p = mPackages.valueFor(package);
+    if (p == NULL) return 0;
     sp<Type> t = p->getTypes().valueFor(type);
     if (t == NULL) return 0;
     sp<ConfigList> c = t->getConfigs().valueFor(name);
@@ -2737,7 +2730,7 @@ status_t ResourceTable::assignResourceIds()
         }
 
         uint32_t typeIdOffset = 0;
-        if (mPackageType == AppFeature || mPackageType == AppOverlay && p->getName() == mAssetsPackage) {
+		if ((mPackageType == AppFeature || mPackageType == AppOverlay) && p->getName() == mAssetsPackage) {
             typeIdOffset = mTypeIdOffset;
         }
 
@@ -2748,7 +2741,7 @@ status_t ResourceTable::assignResourceIds()
         // Auto-generated ID resources won't apply the type ID offset correctly unless
         // the offset is applied here first.
         // b/30607637
-        if (mPackageType == AppFeature || mPackageType == AppOverlay && p->getName() == mAssetsPackage) {
+		if ((mPackageType == AppFeature || mPackageType == AppOverlay) && p->getName() == mAssetsPackage) {
             sp<Type> id = p->getType(String16("id"), unknown);
         }
 
@@ -4428,6 +4421,7 @@ void ResourceTable::Package::movePrivateAttrs() {
 
 sp<ResourceTable::Package> ResourceTable::getPackage(const String16& package)
 {
+/*
     sp<Package> p = mPackages.valueFor(package);
     if (package != mAssetsPackage) {
         p = new Package(package, 0x00);
@@ -4436,7 +4430,7 @@ sp<ResourceTable::Package> ResourceTable::getPackage(const String16& package)
     }
     return p;
 }
-/*
+
 sp<ResourceTable::Package> ResourceTable::getPackage(const String16& package)
 {
     sp<Package> p = mPackages.valueFor(package);
@@ -4458,13 +4452,13 @@ sp<ResourceTable::Package> ResourceTable::getPackage(const String16& package)
         mOrderedPackages.add(p);
         mNextPackageId++;
     }
-
+*/
     if (package != mAssetsPackage && package != String16("android")) {
         return NULL;
     }
-    return p;
+    return mPackages.valueFor(package);
 }
-*/
+
 sp<ResourceTable::Type> ResourceTable::getType(const String16& package,
                                                const String16& type,
                                                const SourcePos& sourcePos,
@@ -5003,9 +4997,9 @@ status_t ResourceTable::modifyForCompat(const Bundle* bundle,
         newConfig.sdkVersion = sdkVersionToGenerate;
         sp<AoptFile> newFile = new AoptFile(target->getSourceFile(),
                 AoptGroupEntry(newConfig), target->getResourceType());
-        String8 resPath = String8::format("res/%s/%s",
+        String8 resPath = String8::format("res/%s/%s.xml",
                 newFile->getGroupEntry().toDirName(target->getResourceType()).string(),
-                target->getSourceFile().getPathLeaf().string());
+                String8(resourceName).string());
         resPath.convertToResPath();
 
         // Add a resource table entry.
@@ -5313,4 +5307,5 @@ status_t ResourceTable::processBundleFormatImpl(const Bundle* bundle,
     }
     return NO_ERROR;
 }
+
 

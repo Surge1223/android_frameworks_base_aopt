@@ -61,7 +61,7 @@ void usage(void)
         "   xmlstrings       Print the strings of the given compiled xml assets.\n\n", gProgName);
     fprintf(stderr,
         " %s p[ackage] [-d][-f][-m][-u][-v][-x][-z][-M AndroidManifest.xml] \\\n"
-        "        [-0 extension [-0 extension ...]] [-g tolerance] \\\n"
+        "        [-0 extension [-0 extension ...]] [-g tolerance] [-j jarfile] \\\n"
         "        [--debug-mode] [--min-sdk-version VAL] [--target-sdk-version VAL] \\\n"
         "        [--app-version VAL] [--app-version-name TEXT] [--custom-package VAL] \\\n"
         "        [--rename-manifest-package PACKAGE] \\\n"
@@ -233,7 +233,9 @@ void usage(void)
         "       Prevents symbols from being generated for strings that do not have a default\n"
         "       localization\n"
         "   --no-version-vectors\n"
-        "       Do not automatically generate versioned copies of vector XML resources.\n",
+        "       Do not automatically generate versioned copies of vector XML resources.\n"
+        "   --private-symbols\n"
+        "       Java package name to use when generating R.java for private resources.\n",
         gDefaultIgnoreAssets);
 }
 
@@ -571,28 +573,6 @@ int main(int argc, char **argv)
                 convertPath(argv[0]);
                 bundle.setCrunchedOutputDir(argv[0]);
                 break;
-            case 'in':
-                argc--;
-                argv++;
-                if (!argc) {
-                    fprintf(stderr, "ERROR: No argument supplied for '-in' option\n");
-                    wantUsage = true;
-                    goto bail;
-                }
-                convertPath(argv[0]);
-                bundle.setApkInputFile(argv[0]);
-                break;
-            case 'out':
-                argc--;
-                argv++;
-                if (!argc) {
-                    fprintf(stderr, "ERROR: No argument supplied for '-out' option\n");
-                    wantUsage = true;
-                    goto bail;
-                }
-                convertPath(argv[0]);
-                bundle.setApkOutputFile(argv[0]);
-                break;
             case 'i':
                 argc--;
                 argv++;
@@ -723,6 +703,27 @@ int main(int argc, char **argv)
                         goto bail;
                     }
                     bundle.setPreferredDensity(argv[0]);
+                } else if (strcmp(cp, "-in") == 0) {
+                    argc--;
+                    argv++;
+                    if (!argc) {
+                        fprintf(stderr, "ERROR: No argument supplied for '--in' option\n");
+                        wantUsage = true;
+                        goto bail;
+                    }
+                	convertPath(argv[0]);
+                	bundle.setApkInputFile(argv[0]);
+                } else if (strcmp(cp, "-out") == 0) {
+                    argc--;
+                    argv++;
+                    if (!argc) {
+                        fprintf(stderr, "ERROR: No argument supplied for '--out' option\n");
+                        wantUsage = true;
+                        goto bail;
+                    }
+	                convertPath(argv[0]);
+	                bundle.setApkOutputFile(argv[0]);
+
                 } else if (strcmp(cp, "-split") == 0) {
                     argc--;
                     argv++;
@@ -873,4 +874,6 @@ bail:
     //printf("--> returning %d\n", result);
     return result;
 }
+
+
 
