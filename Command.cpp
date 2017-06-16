@@ -221,7 +221,7 @@ int doList(Bundle* bundle)
         static const bool kHaveAndroidOs = false;
 #endif
         const ResTable& res = assets.getResources(false);
-        if (&res == NULL) {
+        if (!kHaveAndroidOs) {
             printf("\nNo resource table found.\n");
         } else {
             printf("\nResource table:\n");
@@ -2946,3 +2946,4 @@ char CONSOLE_DATA[2925] = {
     32, 32, 46, 32, 32, 46, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32,
     32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 10
   };
+

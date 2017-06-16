@@ -113,38 +113,35 @@ aoptIncludes := \
 FIND_HOSTOS := $(shell uname -s)
 HOST_NAME := $(shell echo $(FIND_HOSTOS) |sed -e s/L/l/ |sed -e s/D/d/ |sed s/W/w/ )
 
-# ==========================================================
-# Build the target static library: libandroidfw-static
-# ==========================================================
 include $(CLEAR_VARS)
 
 ANDROIDFW_PATH := androidfw
-LOCAL_C_INCLUDES := $(LOCAL_PATH)/
+LOCAL_C_INCLUDES := $(LOCAL_PATH)$(ANDROIDFW_PATH)/
 LOCAL_EXPORT_C_INCLUDES := $(LOCAL_C_INCLUDES)
 
 androidfw_srcs := \
-    /Asset.cpp \
-    /AssetDir.cpp \
-    /AssetManager.cpp \
-    /LocaleData.cpp \
-    /misc.cpp \
-    /ObbFile.cpp \
-    /ResourceTypes.cpp \
-    /StreamingZipInflater.cpp \
-    /TypeWrappers.cpp \
-    /ZipFileRO.cpp \
-    /ZipUtils.cpp \
-    /BackupData.cpp \
-    /BackupHelpers.cpp \
-    /CursorWindow.cpp \
-    /DisplayEventDispatcher.cpp
+    $(ANDROIDFW_PATH)/Asset.cpp \
+    $(ANDROIDFW_PATH)/AssetDir.cpp \
+    $(ANDROIDFW_PATH)/AssetManager.cpp \
+    $(ANDROIDFW_PATH)/LocaleData.cpp \
+    $(ANDROIDFW_PATH)/misc.cpp \
+    $(ANDROIDFW_PATH)/ObbFile.cpp \
+    $(ANDROIDFW_PATH)/ResourceTypes.cpp \
+    $(ANDROIDFW_PATH)/StreamingZipInflater.cpp \
+    $(ANDROIDFW_PATH)/TypeWrappers.cpp \
+    $(ANDROIDFW_PATH)/ZipFileRO.cpp \
+    $(ANDROIDFW_PATH)/ZipUtils.cpp \
+    $(ANDROIDFW_PATH)/BackupData.cpp \
+    $(ANDROIDFW_PATH)/BackupHelpers.cpp \
+    $(ANDROIDFW_PATH)/CursorWindow.cpp \
+    $(ANDROIDFW_PATH)/DisplayEventDispatcher.cpp
 
 LOCAL_MODULE:= libandroidfw-static
 LOCAL_MODULE_TAGS := optional
 LOCAL_CFLAGS :=  $(aoptCflags)
 LOCAL_CPPFLAGS := $(aoptCppFlags)
 LOCAL_C_INCLUDES := external/zlib
-LOCAL_STATIC_LIBRARIES := libziparchive libbase
+LOCAL_STATIC_LIBRARIES :=  libbase
 LOCAL_SRC_FILES := $(androidfw_srcs)
 include $(BUILD_STATIC_LIBRARY)
 
@@ -179,6 +176,36 @@ LOCAL_MODULE_PATH_64 := $(ANDROID_PRODUCT_OUT)/system/bin
 LOCAL_MULTILIB := both
 
 include $(BUILD_EXECUTABLE)
+
+include $(CLEAR_VARS)
+
+ANDROIDFW_PATH := androidfw
+LOCAL_C_INCLUDES := $(LOCAL_PATH)$(ANDROIDFW_PATH)/
+LOCAL_EXPORT_C_INCLUDES := $(LOCAL_C_INCLUDES)
+
+androidfw_srcs := \
+    $(ANDROIDFW_PATH)/Asset.cpp \
+    $(ANDROIDFW_PATH)/AssetDir.cpp \
+    $(ANDROIDFW_PATH)/AssetManager.cpp \
+    $(ANDROIDFW_PATH)/LocaleData.cpp \
+    $(ANDROIDFW_PATH)/misc.cpp \
+    $(ANDROIDFW_PATH)/ObbFile.cpp \
+    $(ANDROIDFW_PATH)/ResourceTypes.cpp \
+    $(ANDROIDFW_PATH)/StreamingZipInflater.cpp \
+    $(ANDROIDFW_PATH)/TypeWrappers.cpp \
+    $(ANDROIDFW_PATH)/ZipFileRO.cpp \
+    $(ANDROIDFW_PATH)/ZipUtils.cpp \
+    $(ANDROIDFW_PATH)/BackupData.cpp \
+    $(ANDROIDFW_PATH)/BackupHelpers.cpp \
+
+LOCAL_MODULE:= libandroidfw-static
+LOCAL_MODULE_TAGS := optional
+LOCAL_CFLAGS :=  $(aoptCflags)
+LOCAL_CPPFLAGS := $(aoptCppFlags)
+LOCAL_C_INCLUDES := external/zlib
+LOCAL_STATIC_LIBRARIES :=  libbase
+LOCAL_SRC_FILES := $(androidfw_srcs)
+include $(BUILD_HOST_STATIC_LIBRARY)
 # ==========================================================
 # Setup some common variables for the different build
 # targets here.
@@ -193,7 +220,7 @@ aoptHostTests := \
     tests/ResourceTable_test.cpp
 
 aoptHostStaticLibs := \
-    libandroidfw \
+    libandroidfw-static \
     libpng \
     libutils \
     liblog \
@@ -264,3 +291,4 @@ LOCAL_STATIC_LIBRARIES := libaopt $(aoptHostStaticLibs)
 LOCAL_STATIC_LIBRARIES_windows := $(aoptHostStaticLibs_windows)
 
 include $(BUILD_HOST_NATIVE_TEST)
+

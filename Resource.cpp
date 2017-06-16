@@ -223,10 +223,10 @@ bool isValidResourceType(const String8& type)
 
 static sp<AoptFile> getResourceFile(const sp<AoptAssets>& assets, bool makeIfNecessary=true)
 {
-    sp<AaptGroup> group = assets->getFiles().valueFor(String8("resources.arsc"));
-    sp<AaptFile> file;
+    sp<AoptGroup> group = assets->getFiles().valueFor(String8("resources.arsc"));
+    sp<AoptFile> file;
     if (group != NULL) {
-        file = group->getFiles().valueFor(AaptGroupEntry());
+        file = group->getFiles().valueFor(AoptGroupEntry());
         if (file != NULL) {
             return file;
         }
@@ -235,7 +235,7 @@ static sp<AoptFile> getResourceFile(const sp<AoptAssets>& assets, bool makeIfNec
     if (!makeIfNecessary) {
         return NULL;
     }
-    return assets->addFile(String8("resources.arsc"), AaptGroupEntry(), String8(),
+    return assets->addFile(String8("resources.arsc"), AoptGroupEntry(), String8(),
                             NULL, String8());
 }
 static status_t parsePackage(Bundle* bundle, const sp<AoptAssets>& assets,
@@ -1607,7 +1607,7 @@ status_t buildResources(Bundle* bundle, const sp<AoptAssets>& assets, sp<ApkBuil
 
     // If we're not overriding the platform build versions,
     // extract them from the platform APK.
-    if (packageType !=NULL &&
+    if (packageType !=ResourceTable::AppFeature &&
             (bundle->getPlatformBuildVersionCode() == "" ||
             bundle->getPlatformBuildVersionName() == "")) {
         err = extractPlatformBuildVersion(assets->getAssetManager(), bundle);
@@ -3254,3 +3254,4 @@ writeDependencyPreReqs(Bundle* /* bundle */, const sp<AoptAssets>& assets, FILE*
     }
     return deps;
 }
+

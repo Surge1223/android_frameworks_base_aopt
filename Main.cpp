@@ -559,7 +559,7 @@ int main(int argc, char **argv)
                 convertPath(argv[0]);
                 bundle.setSingleCrunchInputFile(argv[0]);
                 break;
-            case 'o':
+            case 'O':
                 argc--;
                 argv++;
                 if (!argc) {
@@ -570,7 +570,7 @@ int main(int argc, char **argv)
                 convertPath(argv[0]);
                 bundle.setSingleCrunchOutputFile(argv[0]);
                 break;
-            case '0':
+            case 'e':
                 argc--;
                 argv++;
                 if (!argc) {
