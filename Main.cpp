@@ -228,6 +228,40 @@ void usage(void)
         gDefaultIgnoreAssets);
 }
 
+
+void header(void) {
+    fprintf(stderr, "==================================== \n");
+    fprintf(stderr, "Android Overlay Packaging Tool\n");
+    fprintf(stderr, "==================================== \n");
+}
+
+void dumpUsage(void) {
+    header();
+    fprintf(stderr,
+    " aopt d[ump] [--values] [--include-meta-data] WHAT file.{apk} [asset [asset ...]]\n"
+            "   strings          Print the contents of the resource table string pool in the APK.\n"
+            "   badging          Print the label and icon for the app declared in APK.\n"
+            "   permissions      Print the permissions from the APK.\n"
+            "   resources        Print the resource table from the APK.\n"
+            "   configurations   Print the configurations in the APK.\n"
+            "   xmltree          Print the compiled xmls in the given assets.\n"
+            "   xmlstrings       Print the strings of the given compiled xml assets.\n\n");
+}
+
+void addUsage(void) {
+    header();
+    fprintf(stderr,
+            " aopt a[dd] [-v] file.{zip,jar,apk} file1 [file2 ...]\n"
+            "   Add specified files to Zip-compatible archive.\n\n");
+}
+
+void removeUsage(void) {
+    header();
+    fprintf(stderr,
+            " aopt r[emove] [-v] file.{zip,jar,apk} file1 [file2 ...]\n"
+            "   Delete specified files from Zip-compatible archive.\n\n");
+}
+
 /*
  * Dispatch the command.
  */
@@ -270,24 +304,44 @@ int main(int argc, char **argv)
     bundle.setCompressionMethod(ZipEntry::kCompressDeflated);
 
     if (argc < 2) {
-	fprintf(stderr, "==================================== \n");
-    fprintf(stderr, "Android Overlay Packaging Tool\n");
-	fprintf(stderr, "==================================== \n");	
-    fprintf(stderr,"   No arguments provided 				\n");
-	printf("   type --help for help \n");
+    header();
+    fprintf(stderr,"                                        \n");
+    fprintf(stderr,"   No arguments provided                \n");
+    fprintf(stderr,"                                        \n");
+    fprintf(stderr,"   try:                                  \n");
+    fprintf(stderr,"                                        \n");
+    fprintf(stderr,"   aopt list                            \n");
+    fprintf(stderr,"   aopt dump                            \n");
+    fprintf(stderr,"   aopt add                             \n");
+    fprintf(stderr,"   aopt remove                          \n");
+    fprintf(stderr,"   aopt package                         \n");
+    fprintf(stderr,"   aopt version                         \n");
+	printf("   type any with --help for help \n");
         return -1;
     }
 
     if (argv[1][0] == 'v')
         bundle.setCommand(kCommandVersion);
     else if (argv[1][0] == 'd')
-        bundle.setCommand(kCommandDump);
+    if (strcmp(argv[2], "--help") == 0)
+        dumpUsage();
+        else {
+            bundle.setCommand(kCommandDump);
+        }
     else if (argv[1][0] == 'l')
         bundle.setCommand(kCommandList);
     else if (argv[1][0] == 'a')
+    if (strcmp(argv[2], "--help") == 0)
+        addUsage();
+    else {
         bundle.setCommand(kCommandAdd);
+    }
     else if (argv[1][0] == 'r')
-        bundle.setCommand(kCommandRemove);
+    if (strcmp(argv[2], "--help") == 0)
+            removeUsage();
+    else {
+         bundle.setCommand(kCommandRemove);
+    }
     else if (argv[1][0] == 'p')
         bundle.setCommand(kCommandPackage);
     else if (argv[1][0] == 'c')
