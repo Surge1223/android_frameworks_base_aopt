@@ -323,7 +323,7 @@ int main(int argc, char **argv)
     int result = 1;    // pessimistically assume an error.
     int tolerance = 0;
   	char str[80];
-  	static const char* OverlayPackage = "-overlay";  
+  	static const char* OverlayPackage = "overlay";  
 
     /* default to compression */
     bundle.setCompressionMethod(ZipEntry::kCompressDeflated);
@@ -443,6 +443,14 @@ int main(int argc, char **argv)
                 bundle.setMakePackageDirs(true);
                 break;
             case 'o':
+                bundle.setWantUTF16(true);
+                bundle.setUpdate(true);
+                bundle.setMakePackageDirs(true);
+                bundle.setVerbose(true);
+                bundle.setBuildAppOverlay(true);
+                bundle.setNonConstantId(true);
+                bundle.setExtending(true);
+                bundle.setAutoAddOverlay(true);
                 bundle.setIsOverlayPackage(true);
                 break;
 #if 0
@@ -811,12 +819,11 @@ int main(int argc, char **argv)
                     bundle.setNonConstantId(true);
                     bundle.setBuildAppAsSharedLibrary(true);
                 } else if (strcmp(cp, "-app-overlay") == 0) {
-  					strcpy (str, String8(argv[0]));
-  					strcat(str, OverlayPackage);
-  					puts (str);
                     bundle.setBuildAppOverlay(true);
+                    bundle.setNonConstantId(true);
                     bundle.setExtending(true);
-                    bundle.setInstrumentationPackageNameOverride(str);
+                    bundle.setAutoAddOverlay(true);
+                    bundle.setManifestPackageNameOverride(str);
                 } else if (strcmp(cp, "-no-crunch") == 0) {
                     bundle.setUseCrunchCache(true);
                 } else if (strcmp(cp, "-ignore-assets") == 0) {

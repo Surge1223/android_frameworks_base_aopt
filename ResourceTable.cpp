@@ -1806,10 +1806,6 @@ ResourceTable::ResourceTable(Bundle* bundle, const String16& assetsPackage, Reso
             packageId = 0x01;
             break;
 
-        case AppOverlay:
-            packageId = 0x00;
-            break;
-
         default:
             assert(0);
             break;
@@ -1849,10 +1845,13 @@ status_t ResourceTable::addIncludedResources(Bundle* bundle, const sp<AoptAssets
         if (!featureAssetManager.addAssetPath(featureAfter, NULL)) {
             fprintf(stderr, "ERROR: Feature package '%s' not found.\n",
                     featureAfter.string());
-   
+            return UNKNOWN_ERROR;
+        }
+
         const ResTable& featureTable = featureAssetManager.getResources(false);
         mTypeIdOffset = std::max(mTypeIdOffset,
                 findLargestTypeIdForPackage(featureTable, mAssetsPackage)); 
+    }
 
     return NO_ERROR;
 }
@@ -1922,7 +1921,7 @@ status_t ResourceTable::addEntry(const SourcePos& sourcePos,
     if (rid != 0) {
         sourcePos.error("Resource entry %s/%s is already defined in package %s.",
                 String8(type).string(), String8(name).string(), String8(package).string());
-        return UNKNOWN_ERROR;
+        return NO_ERROR;
     }
     
     sp<Entry> e = getEntry(package, type, name, sourcePos, overwrite,
@@ -1957,7 +1956,7 @@ status_t ResourceTable::startBag(const SourcePos& sourcePos,
     if (rid != 0) {
         sourcePos.error("Resource entry %s/%s is already defined in package %s.",
                 String8(type).string(), String8(name).string(), String8(package).string());
-        return UNKNOWN_ERROR;
+        return NO_ERROR;
     }
 
     if (overlay && !mBundle->getAutoAddOverlay() && !hasBagOrEntry(package, type, name)) {
@@ -2269,7 +2268,6 @@ uint32_t ResourceTable::getResId(const String16& package,
                 return 0;
             }
         }
-
         
         return ResourceIdCache::store(package, type, name, onlyPublic, rid);
     }
@@ -2455,6 +2453,7 @@ uint32_t ResourceTable::getCustomResourceWithCreation(
         if (package == String16("android")) {
             mCurrentXmlPos.printf("did you mean to use @+id instead of @+android:id?");
         }
+
     }
 
     String16 value("false");
@@ -2637,10 +2636,13 @@ status_t ResourceTable::assignResourceIds()
             continue;
         }
 
-        if (mPackageType == System || mPackageType == AppOverlay || mPackageType == SharedLibrary) {
+        if (mPackageType == System) {
             p->movePrivateAttrs();
         }
 
+        if (mPackageType == SharedLibrary) {
+            p->movePrivateAttrs();
+        }
 
         // This has no sense for packages being built as AppFeature (aka with a non-zero offset).
         status_t err = p->applyPublicTypeOrder();
@@ -2677,7 +2679,7 @@ status_t ResourceTable::assignResourceIds()
         }
 
         uint32_t typeIdOffset = 0;
-		if ((mPackageType == AppFeature || mPackageType == AppOverlay) && p->getName() == mAssetsPackage) {
+        if (mPackageType == AppFeature && p->getName() == mAssetsPackage) {
             typeIdOffset = mTypeIdOffset;
         }
 
@@ -2688,7 +2690,7 @@ status_t ResourceTable::assignResourceIds()
         // Auto-generated ID resources won't apply the type ID offset correctly unless
         // the offset is applied here first.
         // b/30607637
-		if ((mPackageType == AppFeature || mPackageType == AppOverlay) && p->getName() == mAssetsPackage) {
+        if (mPackageType == AppFeature && p->getName() == mAssetsPackage) {
             sp<Type> id = p->getType(String16("id"), unknown);
         }
 
@@ -2702,11 +2704,6 @@ status_t ResourceTable::assignResourceIds()
 
             err = t->applyPublicEntryOrder();
 
-            if (err != NO_ERROR && firstError == NO_ERROR) {
-                firstError = err;
-            }
-
-            err = t->applyOverlay();
             if (err != NO_ERROR && firstError == NO_ERROR) {
                 firstError = err;
             }
@@ -4233,6 +4230,7 @@ status_t ResourceTable::Package::setKeyStrings(const sp<AoptFile>& data)
     status_t err = setStrings(data, &mKeyStrings, &mKeyStringsMapping);
     if (err != NO_ERROR) {
         fprintf(stderr, "ERROR: Key string data is corrupt!\n");
+
     }
 
     // Retain a reference to the new data after we've successfully replaced
@@ -4367,40 +4365,14 @@ void ResourceTable::Package::movePrivateAttrs() {
 sp<ResourceTable::Package> ResourceTable::getPackage(const String16& package)
 {
     sp<Package> p = mPackages.valueFor(package);
-/*
-if (p = "android") {
-    if (mBundle->getIsOverlayPackage()) {
-       p = new Package(package, 0x01);
-		   mBuildAppOverlay = true;
-        return p;
-    }    if (p == NULL) {
     if (p == NULL) {
         if (mBundle->getIsOverlayPackage()) {
             p = new Package(package, 0x01);
-        } else if (mIsAppPackage) {
-            if (mHaveAppPackage) {
-                fprintf(stderr, "Adding multiple application package resources; only one is allowed.\n"
-                                "Use -x to create extended resources.\n");
-                return NULL;
-            }
-            mHaveAppPackage = true;
-            p = new Package(package, 127);
-        } else {
-            p = new Package(package, mNextPackageId);
-        }
-        //printf("*** NEW PACKAGE: \"%s\" id=%d\n",
-        //       String8(package).string(), p->getAssignedId());
-        mPackages.add(package, p);
-        mOrderedPackages.add(p);
-        mNextPackageId++;
+    }
+        return NULL;
     }
 
-    if (package != mAssetsPackage) {
-*/ 
-    if (p == NULL) {
-      return NULL;
-    }
-    return p->getType(type, sourcePos, doSetIndex);
+    return p;
 }
 
 sp<ResourceTable::Type> ResourceTable::getType(const String16& package,
@@ -4408,7 +4380,13 @@ sp<ResourceTable::Type> ResourceTable::getType(const String16& package,
                                                const SourcePos& sourcePos,
                                                bool doSetIndex)
 {
- 
+    sp<Package> p = getPackage(package);
+    if (p == NULL) {
+        return NULL;
+    }
+    return p->getType(type, sourcePos, doSetIndex);
+}
+
 sp<ResourceTable::Entry> ResourceTable::getEntry(const String16& package,
                                                  const String16& type,
                                                  const String16& name,
@@ -4494,7 +4472,6 @@ sp<const ResourceTable::Entry> ResourceTable::getEntry(uint32_t resID,
         fprintf(stderr, "warning: Entry not found for resource #%08x\n", resID);
         return NULL;
     }
-
     
     ConfigDescription cdesc;
     if (config) cdesc = *config;
@@ -5245,5 +5222,4 @@ status_t ResourceTable::processBundleFormatImpl(const Bundle* bundle,
     }
     return NO_ERROR;
 }
-
 

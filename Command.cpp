@@ -2617,10 +2617,12 @@ int doPackage(Bundle* bundle)
         if (bundle->getCustomPackage() == NULL) {
             // Write the R.java file into the appropriate class directory
             // e.g. gen/com/foo/app/R.java
-            err = writeResourceSymbols(bundle, assets, assets->getPackage(),  true, false);
+            err = writeResourceSymbols(bundle, assets, assets->getPackage(), true,
+                    bundle->getBuildAppOverlay() || bundle->getBuildAppAsSharedLibrary());
         } else {
             const String8 customPkg(bundle->getCustomPackage());
-            err = writeResourceSymbols(bundle, assets, customPkg,  true, false);
+            err = writeResourceSymbols(bundle, assets, customPkg, true,
+                    bundle->getBuildAppOverlay() || bundle->getBuildAppAsSharedLibrary());
         }
         if (err < 0) {
             goto bail;
@@ -2634,7 +2636,8 @@ int doPackage(Bundle* bundle)
             char* packageString = strtok(libs.lockBuffer(libs.length()), ":");
             while (packageString != NULL) {
                 // Write the R.java file out with the correct package name
-                err = writeResourceSymbols(bundle, assets, String8(packageString),  true, false);
+                err = writeResourceSymbols(bundle, assets, String8(packageString), true,
+                        bundle->getBuildAppOverlay() || bundle->getBuildAppAsSharedLibrary());
                 if (err < 0) {
                     goto bail;
                 }
@@ -2810,7 +2813,7 @@ int doInDaemonMode(Bundle* bundle) {
             bundle->setApkInputFile(inputFile.c_str());
             bundle->setApkOutputFile(outputFile.c_str());
             std::cout << "Compiling Overlay " << inputFile << std::endl;
-            if (doApk(bundle) != NO_ERROR) {
+            if (doPackage(bundle) != NO_ERROR) {
                 std::cout << "Error" << std::endl;
             }
             std::cout << "Done" << std::endl;
