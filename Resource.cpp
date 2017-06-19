@@ -221,23 +221,6 @@ bool isValidResourceType(const String8& type)
         || type == "color" || type == "menu" || type == "mipmap";
 }
 
-static sp<AoptFile> getResourceFile(const sp<AoptAssets>& assets, bool makeIfNecessary=true)
-{
-    sp<AaptGroup> group = assets->getFiles().valueFor(String8("resources.arsc"));
-    sp<AaptFile> file;
-    if (group != NULL) {
-        file = group->getFiles().valueFor(AaptGroupEntry());
-        if (file != NULL) {
-            return file;
-        }
-    }
-
-    if (!makeIfNecessary) {
-        return NULL;
-    }
-    return assets->addFile(String8("resources.arsc"), AaptGroupEntry(), String8(),
-                            NULL, String8());
-}
 static status_t parsePackage(Bundle* bundle, const sp<AoptAssets>& assets,
     const sp<AoptGroup>& grp)
 {
@@ -1195,7 +1178,9 @@ status_t buildResources(Bundle* bundle, const sp<AoptAssets>& assets, sp<ApkBuil
     }
 
     ResourceTable::PackageType packageType = ResourceTable::App;
-    if (bundle->getBuildSharedLibrary()) {
+    if (bundle-> getBuildAppOverlay()) {
+        packageType = ResourceTable::AppOverlay;
+    } else if (bundle->getBuildSharedLibrary()) {
         packageType = ResourceTable::System;
     } else if (bundle->getExtending()) {
         packageType = ResourceTable::System;
@@ -1404,11 +1389,6 @@ status_t buildResources(Bundle* bundle, const sp<AoptAssets>& assets, sp<ApkBuil
     // --------------------------------------------------------------------
 
     if (table.hasResources()) {
-        sp<AoptFile> resFile(getResourceFile(assets));
-        if (resFile == NULL) {
-            fprintf(stderr, "Error: unable to generate entry for resource data\n");
-            return UNKNOWN_ERROR;
-        }
         err = table.assignResourceIds();
         if (err < NO_ERROR) {
             return err;
@@ -1605,9 +1585,9 @@ status_t buildResources(Bundle* bundle, const sp<AoptAssets>& assets, sp<ApkBuil
         return UNKNOWN_ERROR;
     }
 
-    // If we're not overriding the platform build versions,
+ // If we're not overriding the platform build versions,
     // extract them from the platform APK.
-    if (packageType !=NULL &&
+    if (packageType != ResourceTable::System &&
             (bundle->getPlatformBuildVersionCode() == "" ||
             bundle->getPlatformBuildVersionName() == "")) {
         err = extractPlatformBuildVersion(assets->getAssetManager(), bundle);
@@ -2047,11 +2027,9 @@ status_t buildResources(Bundle* bundle, const sp<AoptAssets>& assets, sp<ApkBuil
         }
     }
 
-        resFile = getResourceFile(assets);
-        if (resFile == NULL) {
-            fprintf(stderr, "Error: unable to generate entry for resource data\n");
-            return UNKNOWN_ERROR;
-        }
+    if (hasErrors) {
+        return UNKNOWN_ERROR;
+    }
 
     if (resFile != NULL) {
         // These resources are now considered to be a part of the included
@@ -3254,3 +3232,4 @@ writeDependencyPreReqs(Bundle* /* bundle */, const sp<AoptAssets>& assets, FILE*
     }
     return deps;
 }
+

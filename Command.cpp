@@ -221,7 +221,7 @@ int doList(Bundle* bundle)
         static const bool kHaveAndroidOs = false;
 #endif
         const ResTable& res = assets.getResources(false);
-        if (&res == NULL) {
+        if (!kHaveAndroidOs) {
             printf("\nNo resource table found.\n");
         } else {
             printf("\nResource table:\n");
@@ -2617,10 +2617,12 @@ int doPackage(Bundle* bundle)
         if (bundle->getCustomPackage() == NULL) {
             // Write the R.java file into the appropriate class directory
             // e.g. gen/com/foo/app/R.java
-            err = writeResourceSymbols(bundle, assets, assets->getPackage(),  true, false);
+            err = writeResourceSymbols(bundle, assets, assets->getPackage(), true,
+                    bundle->getBuildAppOverlay() || bundle->getBuildAppAsSharedLibrary());
         } else {
             const String8 customPkg(bundle->getCustomPackage());
-            err = writeResourceSymbols(bundle, assets, customPkg,  true, false);
+            err = writeResourceSymbols(bundle, assets, customPkg, true,
+                    bundle->getBuildAppOverlay() || bundle->getBuildAppAsSharedLibrary());
         }
         if (err < 0) {
             goto bail;
@@ -2634,7 +2636,8 @@ int doPackage(Bundle* bundle)
             char* packageString = strtok(libs.lockBuffer(libs.length()), ":");
             while (packageString != NULL) {
                 // Write the R.java file out with the correct package name
-                err = writeResourceSymbols(bundle, assets, String8(packageString),  true, false);
+                err = writeResourceSymbols(bundle, assets, String8(packageString), true,
+                        bundle->getBuildAppOverlay() || bundle->getBuildAppAsSharedLibrary());
                 if (err < 0) {
                     goto bail;
                 }
@@ -2769,6 +2772,48 @@ int runInDaemonMode(Bundle* bundle) {
             bundle->setSingleCrunchOutputFile(outputFile.c_str());
             std::cout << "Crunching " << inputFile << std::endl;
             if (doSingleCrunch(bundle) != NO_ERROR) {
+                std::cout << "Error" << std::endl;
+            }
+            std::cout << "Done" << std::endl;
+        } else {
+            // in case of invalid command, just bail out.
+            std::cerr << "Unknown command" << std::endl;
+            return -1;
+        }
+    }
+    return -1;
+}
+
+
+/*
+ * Do Batch Compile
+ * PRECONDITIONS
+ *  -in flag points to a source directory containing drawable* folders *  -i points to a single png file
+ *  -out points to a output dir
+ */
+int doApk(Bundle* bundle)
+{
+    fprintf(stdout, "Compiling Package: %s\n", bundle->getApkInputFile());
+    fprintf(stdout, "\tOutput file: %s\n", bundle->getApkOutputFile());
+    String8 output(bundle->getApkOutputFile());
+    String8 input(bundle->getApkInputFile());
+    return NO_ERROR;
+}
+
+int doInDaemonMode(Bundle* bundle) {
+    std::cout << "Ready" << std::endl;
+    for (std::string cmd; std::getline(std::cin, cmd);) {
+        if (cmd == "quit") {
+            return NO_ERROR;
+        } else if (cmd == "o") {
+            // Two argument compile
+            std::string inputFile, outputFile;
+            std::getline(std::cin, inputFile);
+            std::getline(std::cin, outputFile);
+            bundle->setApkInputFile(inputFile.c_str());
+            bundle->setApkOutputFile(outputFile.c_str());
+            std::cout << "Compiling Overlay " << inputFile << std::endl;
+            if (doPackage(bundle) != NO_ERROR) {
                 std::cout << "Error" << std::endl;
             }
             std::cout << "Done" << std::endl;
@@ -2946,3 +2991,4 @@ char CONSOLE_DATA[2925] = {
     32, 32, 46, 32, 32, 46, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32,
     32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 10
   };
+

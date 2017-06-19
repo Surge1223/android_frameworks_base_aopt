@@ -29,7 +29,8 @@ typedef enum Command {
     kCommandPackage,
     kCommandCrunch,
     kCommandSingleCrunch,
-    kCommandDaemon
+    kCommandDaemon,
+    kCommandBatch
 } Command;
 
 /*
@@ -54,20 +55,21 @@ public:
           mWantUTF16(false), mValues(false), mIncludeMetaData(false),
           mCompressionMethod(0), mJunkPath(false), mOutputAPKFile(NULL),
           mManifestPackageNameOverride(NULL), mInstrumentationPackageNameOverride(NULL),
-          mIsOverlayPackage(false),
-          mAutoAddOverlay(true), mGenDependencies(false), mNoVersionVectors(false),
+          mIsOverlayPackage(false), mApkInputFile(NULL), mApkOutputFile(NULL), 
+          mAutoAddOverlay(false), mGenDependencies(false), mNoVersionVectors(false),
           mCrunchedOutputDir(NULL), mProguardFile(NULL), mMainDexProguardFile(NULL),
           mAndroidManifestFile(NULL), mPublicOutputFile(NULL),
           mRClassDir(NULL), mResourceIntermediatesDir(NULL), mManifestMinSdkVersion(NULL),
           mMinSdkVersion(NULL), mTargetSdkVersion(NULL), mMaxSdkVersion(NULL),
           mVersionCode(NULL), mVersionName(NULL), mReplaceVersion(false), mCustomPackage(NULL),
-          mExtraPackages(NULL), mMaxResVersion(NULL), mDebugMode(false), mNonConstantId(true),
+          mExtraPackages(NULL), mMaxResVersion(NULL), mDebugMode(false), mNonConstantId(false),
           mSkipSymbolsWithoutDefaultLocalization(false),
           mProduct(NULL), mUseCrunchCache(false), mErrorOnFailedInsert(false),
           mErrorOnMissingConfigEntry(false), mOutputTextSymbols(NULL),
           mSingleCrunchInputFile(NULL), mSingleCrunchOutputFile(NULL),
           mBuildSharedLibrary(false),
           mBuildAppAsSharedLibrary(false),
+          mBuildAppOverlay(false),
           mArgc(0), mArgv(NULL)
         {}
     ~Bundle(void) {}
@@ -177,7 +179,6 @@ public:
     const android::String8& getFeatureOfPackage() const { return mFeatureOfPackage; }
     void setFeatureAfterPackage(const char* str) { mFeatureAfterPackage = str; }
     const android::String8& getFeatureAfterPackage() const { return mFeatureAfterPackage; }
-
     const char*  getManifestMinSdkVersion() const { return mManifestMinSdkVersion; }
     void setManifestMinSdkVersion(const char*  val) { mManifestMinSdkVersion = val; }
     const char*  getMinSdkVersion() const { return mMinSdkVersion; }
@@ -220,8 +221,14 @@ public:
     void setBuildSharedLibrary(bool val) { mBuildSharedLibrary = val; }
     bool getBuildAppAsSharedLibrary() const { return mBuildAppAsSharedLibrary; }
     void setBuildAppAsSharedLibrary(bool val) { mBuildAppAsSharedLibrary = val; }
+    bool getBuildAppOverlay() const { return mBuildAppOverlay; }
+    void setBuildAppOverlay(bool val) { mBuildAppOverlay = val; }
     void setNoVersionVectors(bool val) { mNoVersionVectors = val; }
     bool getNoVersionVectors() const { return mNoVersionVectors; }
+    const char* getApkInputFile() const { return mApkInputFile; }
+    void setApkInputFile(const char* val) { mApkInputFile = val; }
+    const char* getApkOutputFile() const { return mApkOutputFile; }
+    void setApkOutputFile(const char* val) { mApkOutputFile = val; }
 
     /*
      * Set and get the file specification.
@@ -249,7 +256,6 @@ public:
     int getPackageCount(void) const { return mPackageCount; }
     void setPackageCount(int val) { mPackageCount = val; }
 #endif
-
     /* Certain features may only be available on a specific SDK level or
      * above. SDK levels that have a non-numeric identifier are assumed
      * to be newer than any SDK level that has a number designated.
@@ -300,6 +306,8 @@ private:
     const char* mManifestPackageNameOverride;
     const char* mInstrumentationPackageNameOverride;
     bool        mIsOverlayPackage;
+    const char* mApkInputFile;
+    const char* mApkOutputFile;
     bool        mAutoAddOverlay;
     bool        mGenDependencies;
     bool        mNoVersionVectors;
@@ -344,6 +352,7 @@ private:
     const char* mSingleCrunchOutputFile;
     bool        mBuildSharedLibrary;
     bool        mBuildAppAsSharedLibrary;
+    bool        mBuildAppOverlay;
     android::String8 mPlatformVersionCode;
     android::String8 mPlatformVersionName;
     android::String8 mPrivateSymbolsPackage;

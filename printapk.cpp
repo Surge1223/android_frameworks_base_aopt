@@ -1,7 +1,8 @@
-#include <utils/ResourceTypes.h>
+#include <androidfw/ResourceTypes.h>
 #include <utils/String8.h>
 #include <utils/String16.h>
-#include <zipfile/zipfile.h>
+#include <androidfw/ZipUtils.h>
+#include "ZipFile.h"
 #include <stdio.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -22,26 +23,25 @@ usage()
 
 
 int
-main(int argc, char** argv)
+printapk(int argc, char** argv)
 {
     const char* filename;
     int fd;
     ssize_t amt;
     off_t size;
+    ZipFile* zip = NULL;
+    status_t result;
+    int flags;
+    ZipEntry entry;
     void* buf;
-    zipfile_t zip;
-    zipentry_t entry;
-    void* cookie;
-    void* resfile;
-    int bufsize;
-    int err;
-
     if (argc != 2) {
         return usage();
     }
 
+    flags = ZipFile::kOpenReadWrite;
     filename = argv[1];
     fd = open(filename, O_RDONLY);
+
     if (fd == -1) {
         fprintf(stderr, "apk: couldn't open file for read: %s\n", filename);
         return 1;
@@ -68,14 +68,14 @@ main(int argc, char** argv)
     }
 
     close(fd);
-
-    zip = init_zipfile(buf, size);
-    if (zip == NULL) {
+    zip = new ZipFile;
+    result = zip->open(filename, flags);
+    if (result != NO_ERROR) {
+        delete zip;
         fprintf(stderr, "apk: file doesn't seem to be a zip file: %s\n",
                 filename);
         return 1;
-    }
-
+/*
     printf("files:\n");
     cookie = NULL;
     while ((entry = iterate_zipfile(zip, &cookie))) {
@@ -98,6 +98,7 @@ main(int argc, char** argv)
 
         ResTable res(resfile, size, resfile);
         res.print();
+*/
 #if 0
         size_t tableCount = res.getTableCount();
         printf("Tables: %d\n", (int)tableCount);

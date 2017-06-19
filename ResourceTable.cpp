@@ -2300,7 +2300,7 @@ uint32_t ResourceTable::getResId(const String16& ref,
                                  bool onlyPublic) const
 {
     String16 package, type, name;
-    bool refOnlyPublic = false;
+    bool refOnlyPublic = true;
     if (!ResTable::expandResourceRef(
         ref.string(), ref.size(), &package, &type, &name,
         defType, defPackage ? defPackage:&mAssetsPackage,
@@ -2453,6 +2453,7 @@ uint32_t ResourceTable::getCustomResourceWithCreation(
         if (package == String16("android")) {
             mCurrentXmlPos.printf("did you mean to use @+id instead of @+android:id?");
         }
+
     }
 
     String16 value("false");
@@ -2635,6 +2636,10 @@ status_t ResourceTable::assignResourceIds()
             continue;
         }
 
+        if (mPackageType == System) {
+            p->movePrivateAttrs();
+        }
+
         if (mPackageType == SharedLibrary) {
             p->movePrivateAttrs();
         }
@@ -2698,6 +2703,11 @@ status_t ResourceTable::assignResourceIds()
             }
 
             err = t->applyPublicEntryOrder();
+            if (err != NO_ERROR && firstError == NO_ERROR) {
+                firstError = err;
+            }
+
+            err = t->applyOverlay();
             if (err != NO_ERROR && firstError == NO_ERROR) {
                 firstError = err;
             }
@@ -3802,12 +3812,11 @@ ssize_t ResourceTable::Entry::flatten(Bundle* /* bundle */, const sp<AoptFile>& 
     ResTable_entry header;
     memset(&header, 0, sizeof(header));
     header.size = htods(sizeof(header));
-    const type ty = this != NULL ? mType : TYPE_ITEM;
-    if (this != NULL) {
-        if (ty == TYPE_BAG) {
-            header.flags |= htods(header.FLAG_COMPLEX);
-        }
-      if (isPublic) {
+    const type ty = mType;
+    if (ty == TYPE_BAG) {
+        header.flags |= htods(header.FLAG_COMPLEX);
+    }
+    if (isPublic) {
         header.flags |= htods(header.FLAG_PUBLIC);
     }
     if (isOverlay) {
@@ -4225,6 +4234,7 @@ status_t ResourceTable::Package::setKeyStrings(const sp<AoptFile>& data)
     status_t err = setStrings(data, &mKeyStrings, &mKeyStringsMapping);
     if (err != NO_ERROR) {
         fprintf(stderr, "ERROR: Key string data is corrupt!\n");
+
     }
 
     // Retain a reference to the new data after we've successfully replaced
@@ -4358,32 +4368,11 @@ void ResourceTable::Package::movePrivateAttrs() {
 
 sp<ResourceTable::Package> ResourceTable::getPackage(const String16& package)
 {
-    sp<Package> p = mPackages.valueFor(package);
-    if (p == NULL || p == String16("android") {
-        if (mBundle->getIsOverlayPackage()) {
-            p = new Package(package, 0x01);
-        } else if (mIsAppPackage) {
-            if (mHaveAppPackage) {
-                fprintf(stderr, "Adding multiple application package resources; only one is allowed.\n"
-                                "Use -x to create extended resources.\n");
-                return NULL;
-            }
-            mHaveAppPackage = true;
-            p = new Package(package, 127);
-        } else {
-            p = new Package(package, mNextPackageId);
-        }
-        //printf("*** NEW PACKAGE: \"%s\" id=%d\n",
-        //       String8(package).string(), p->getAssignedId());
-        mPackages.add(package, p);
-        mOrderedPackages.add(p);
-        mNextPackageId++;
-    }
-
-    if (package != mAssetsPackage && package != String16("android") {
+    if (package != mAssetsPackage) {
         return NULL;
     }
-    return p;
+
+    return mPackages.valueFor(package);
 }
 
 sp<ResourceTable::Type> ResourceTable::getType(const String16& package,
@@ -5233,3 +5222,4 @@ status_t ResourceTable::processBundleFormatImpl(const Bundle* bundle,
     }
     return NO_ERROR;
 }
+
