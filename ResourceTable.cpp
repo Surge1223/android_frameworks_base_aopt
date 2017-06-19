@@ -2703,7 +2703,11 @@ status_t ResourceTable::assignResourceIds()
             }
 
             err = t->applyPublicEntryOrder();
+            if (err != NO_ERROR && firstError == NO_ERROR) {
+                firstError = err;
+            }
 
+            err = t->applyOverlay();
             if (err != NO_ERROR && firstError == NO_ERROR) {
                 firstError = err;
             }
@@ -4364,15 +4368,11 @@ void ResourceTable::Package::movePrivateAttrs() {
 
 sp<ResourceTable::Package> ResourceTable::getPackage(const String16& package)
 {
-    sp<Package> p = mPackages.valueFor(package);
-    if (p == NULL) {
-        if (mBundle->getIsOverlayPackage()) {
-            p = new Package(package, 0x01);
-    }
+    if (package != mAssetsPackage) {
         return NULL;
     }
 
-    return p;
+    return mPackages.valueFor(package);
 }
 
 sp<ResourceTable::Type> ResourceTable::getType(const String16& package,

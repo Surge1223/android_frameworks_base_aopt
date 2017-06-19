@@ -221,23 +221,6 @@ bool isValidResourceType(const String8& type)
         || type == "color" || type == "menu" || type == "mipmap";
 }
 
-static sp<AoptFile> getResourceFile(const sp<AoptAssets>& assets, bool makeIfNecessary=true)
-{
-    sp<AoptGroup> group = assets->getFiles().valueFor(String8("resources.arsc"));
-    sp<AoptFile> file;
-    if (group != NULL) {
-        file = group->getFiles().valueFor(AoptGroupEntry());
-        if (file != NULL) {
-            return file;
-        }
-    }
-
-    if (!makeIfNecessary) {
-        return NULL;
-    }
-    return assets->addFile(String8("resources.arsc"), AoptGroupEntry(), String8(),
-                            NULL, String8());
-}
 static status_t parsePackage(Bundle* bundle, const sp<AoptAssets>& assets,
     const sp<AoptGroup>& grp)
 {
@@ -1406,11 +1389,6 @@ status_t buildResources(Bundle* bundle, const sp<AoptAssets>& assets, sp<ApkBuil
     // --------------------------------------------------------------------
 
     if (table.hasResources()) {
-        sp<AoptFile> resFile(getResourceFile(assets));
-        if (resFile == NULL) {
-            fprintf(stderr, "Error: unable to generate entry for resource data\n");
-            return UNKNOWN_ERROR;
-        }
         err = table.assignResourceIds();
         if (err < NO_ERROR) {
             return err;
@@ -2049,11 +2027,9 @@ status_t buildResources(Bundle* bundle, const sp<AoptAssets>& assets, sp<ApkBuil
         }
     }
 
-        resFile = getResourceFile(assets);
-        if (resFile == NULL) {
-            fprintf(stderr, "Error: unable to generate entry for resource data\n");
-            return UNKNOWN_ERROR;
-        }
+    if (hasErrors) {
+        return UNKNOWN_ERROR;
+    }
 
     if (resFile != NULL) {
         // These resources are now considered to be a part of the included
