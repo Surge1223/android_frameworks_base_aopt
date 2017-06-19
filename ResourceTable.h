@@ -98,6 +98,7 @@ public:
         SharedLibrary,
         AppFeature,
         AppOverlay,
+		    OverlayPackage,
     };
 
     class Package;

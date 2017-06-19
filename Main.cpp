@@ -123,6 +123,9 @@ void usage(void)
         "   -k  junk path of file(s) added\n"
         "   -m  make package directories under location specified by -J\n"
         "   -o  create overlay package (ie only resources; expects <overlay-package> in manifest)\n"
+#if 0
+        "   -p  pseudolocalize the default configuration\n"
+#endif
         "   -u  update existing packages (add new, replace older, remove deleted files)\n"
         "   -v  verbose output\n"
         "   -x  create extending (non-application) resource IDs\n"
@@ -239,6 +242,7 @@ void usage(void)
         gDefaultIgnoreAssets);
 }
 
+
 void header(void) {
     fprintf(stderr, "==================================== \n");
     fprintf(stderr, "Android Overlay Packaging Tool\n");
@@ -279,6 +283,7 @@ void overlayUsage(void) {
         "   Create bactch overlay apks on one or several resource folders\n"
         "   and store the results in the output folder.\n\n");
 }
+
 /*
  * Dispatch the command.
  */
@@ -312,7 +317,6 @@ int handleCommand(Bundle* bundle)
 int main(int argc, char **argv)
 {
     char *prog = argv[0];
-    
     Bundle bundle;
     bool wantUsage = false;
     bool wantHelp = false;
@@ -343,7 +347,7 @@ int main(int argc, char **argv)
     }
 
     if (argv[1][0] == 'v')
-    bundle.setCommand(kCommandVersion);
+        bundle.setCommand(kCommandVersion);
     else if (argv[1][0] == 'd')
     if (strcmp(argv[2], "--help") == 0)
         dumpUsage();
@@ -437,6 +441,9 @@ int main(int argc, char **argv)
                 break;
             case 'm':
                 bundle.setMakePackageDirs(true);
+                break;
+            case 'o':
+                bundle.setIsOverlayPackage(true);
                 break;
 #if 0
             case 'p':
@@ -584,7 +591,7 @@ int main(int argc, char **argv)
                 convertPath(argv[0]);
                 bundle.setSingleCrunchInputFile(argv[0]);
                 break;
-            case 'o':
+            case 'O':
                 argc--;
                 argv++;
                 if (!argc) {
@@ -595,7 +602,7 @@ int main(int argc, char **argv)
                 convertPath(argv[0]);
                 bundle.setSingleCrunchOutputFile(argv[0]);
                 break;
-            case '0':
+            case 'e':
                 argc--;
                 argv++;
                 if (!argc) {

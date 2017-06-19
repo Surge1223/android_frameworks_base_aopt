@@ -1756,6 +1756,7 @@ status_t compileResourceFile(Bundle* bundle,
             return UNKNOWN_ERROR;
         }
     }
+
     // For every resource defined, there must be exist one variant with a product attribute
     // set to 'default' (or no product attribute at all).
     // We check to see that for every resource that was ignored because of a mismatched
@@ -1802,7 +1803,7 @@ ResourceTable::ResourceTable(Bundle* bundle, const String16& assetsPackage, Reso
             break;
 
         case SharedLibrary:
-            packageId = 0x00;
+            packageId = 0x01;
             break;
 
         case AppOverlay:
@@ -1848,66 +1849,13 @@ status_t ResourceTable::addIncludedResources(Bundle* bundle, const sp<AoptAssets
         if (!featureAssetManager.addAssetPath(featureAfter, NULL)) {
             fprintf(stderr, "ERROR: Feature package '%s' not found.\n",
                     featureAfter.string());
-            return UNKNOWN_ERROR;
-        }
-
+   
         const ResTable& featureTable = featureAssetManager.getResources(false);
-
         mTypeIdOffset = std::max(mTypeIdOffset,
                 findLargestTypeIdForPackage(featureTable, mAssetsPackage)); 
-    }
-
-/*
-    // Retrieve all the packages.
-    const size_t N = incl.getBasePackageCount();
-    for (size_t phase=0; phase<2; phase++) {
-        for (size_t i=0; i<N; i++) {
-            String16 name(incl.getBasePackageName(i));
-            uint32_t id = incl.getBasePackageId(i);
-            // First time through: only add base packages (id
-            // is not 0); second time through add the other
-            // packages.
-            if (phase != 0) {
-                if (id != 0) {
-                    // Skip base packages -- already one.
-                    id = 0;
-                } else {
-                    // Assign a dynamic id.
-                    id = mNextPackageId;
-                }
-            } else if (id != 0) {
-                if (id == 127) {
-                    if (mHaveAppPackage) {
-                        fprintf(stderr, "Included resources have two application packages!\n");
-                        return UNKNOWN_ERROR;
-                    }
-                    mHaveAppPackage = true;
-                }
-//                if (mNextPackageId > id) {
-//                    fprintf(stderr, "Included base package ID %d already in use!\n", id);
-//                    return UNKNOWN_ERROR;
-//                }
-            }
-            if (id != 0) {
-//    			if (kIsDebug) {
-					printf("Including package %s with ID=%d\n",
-                             String8(name).string(), id); 
-//				}
-                sp<Package> p = new Package(name, id);
-                mPackages.add(name, p);
-                mOrderedPackages.add(p);
-
-                if (id >= mNextPackageId) {
-                    mNextPackageId = id+1;
-                }
-            }
-        }
-}
-*/
 
     return NO_ERROR;
 }
-
 
 status_t ResourceTable::addPublic(const SourcePos& sourcePos,
                                   const String16& package,
@@ -2501,7 +2449,7 @@ uint32_t ResourceTable::getCustomResourceWithCreation(
         return resId;
     }
 
-    if (mAssetsPackage != package && package != String16("android")) {
+    if (mAssetsPackage != package) {
         mCurrentXmlPos.error("creating resource for external package %s: %s/%s.",
                 String8(package).string(), String8(type).string(), String8(name).string());
         if (package == String16("android")) {
@@ -2690,8 +2638,7 @@ status_t ResourceTable::assignResourceIds()
             continue;
         }
 
-
-        if (mPackageType == System || mPackageType == AppOverlay) {
+        if (mPackageType == System || mPackageType == AppOverlay || mPackageType == SharedLibrary) {
             p->movePrivateAttrs();
         }
 
@@ -3003,8 +2950,7 @@ status_t ResourceTable::flatten(Bundle* bundle, const sp<const ResourceFilter>& 
     for (size_t i = 0; i < basePackageCount; i++) {
         size_t packageId = table.getBasePackageId(i);
         String16 packageName(table.getBasePackageName(i));
-        if (packageId > 0x01 && packageId != 0x7f &&
-                packageName != String16("android")) {
+        if (packageId > 0xff && packageId != 0x8f) {
             libraryPackages.add(sp<Package>(new Package(packageName, packageId)));
         }
     }
@@ -4272,9 +4218,8 @@ status_t ResourceTable::Package::setTypeStrings(const sp<AoptFile>& data)
     status_t err = setStrings(data, &mTypeStrings, &mTypeStringsMapping);
     if (err != NO_ERROR) {
         fprintf(stderr, "ERROR: Type string data is corrupt!\n");
-        return err;
-    }
 
+    }
 
     // Retain a reference to the new data after we've successfully replaced
     // all uses of the old reference (in setStrings() ).
@@ -4421,42 +4366,16 @@ void ResourceTable::Package::movePrivateAttrs() {
 
 sp<ResourceTable::Package> ResourceTable::getPackage(const String16& package)
 {
-/*
     sp<Package> p = mPackages.valueFor(package);
-    if (package != mAssetsPackage) {
-        p = new Package(package, 0x00);
-		mBuildAppOverlay = true;
+if (p = "android") {
+    if (mBundle->getIsOverlayPackage()) {
+       p = new Package(package, 0x01);
+		   mBuildAppOverlay = true;
         return p;
-    }
-    return p;
-}
-
-sp<ResourceTable::Package> ResourceTable::getPackage(const String16& package)
-{
-    sp<Package> p = mPackages.valueFor(package);
-    if (p == NULL || "android") {
-        if (mBundle->getIsOverlayPackage()) {
-            p = new Package(package, 0x00);
-        } else if (mIsAppPackage) {
-            if (mHaveAppPackage) {
-                fprintf(stderr, "Adding multiple application package resources; only one is allowed.\n"
-                                "Use -x to create extended resources.\n");
-                return NULL;
-            }
-            mHaveAppPackage = true;
-            p = new Package(package, 127);
-        } else {
-            p = new Package(package, mNextPackageId);
-        }
-        mPackages.add(package, p);
-        mOrderedPackages.add(p);
-        mNextPackageId++;
-    }
-*/
-    if (package != mAssetsPackage && package != String16("android")) {
+    }    if (p == NULL) {
         return NULL;
     }
-    return mPackages.valueFor(package);
+    return p->getType(type, sourcePos, doSetIndex);
 }
 
 sp<ResourceTable::Type> ResourceTable::getType(const String16& package,
@@ -4464,13 +4383,7 @@ sp<ResourceTable::Type> ResourceTable::getType(const String16& package,
                                                const SourcePos& sourcePos,
                                                bool doSetIndex)
 {
-    sp<Package> p = getPackage(package);
-    if (p == NULL) {
-        return NULL;
-    }
-    return p->getType(type, sourcePos, doSetIndex);
-}
-
+ 
 sp<ResourceTable::Entry> ResourceTable::getEntry(const String16& package,
                                                  const String16& type,
                                                  const String16& name,
