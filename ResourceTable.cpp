@@ -2455,7 +2455,6 @@ uint32_t ResourceTable::getCustomResourceWithCreation(
         if (package == String16("android")) {
             mCurrentXmlPos.printf("did you mean to use @+id instead of @+android:id?");
         }
-        return 0;
     }
 
     String16 value("false");
@@ -2642,6 +2641,7 @@ status_t ResourceTable::assignResourceIds()
             p->movePrivateAttrs();
         }
 
+
         // This has no sense for packages being built as AppFeature (aka with a non-zero offset).
         status_t err = p->applyPublicTypeOrder();
         if (err != NO_ERROR && firstError == NO_ERROR) {
@@ -2701,6 +2701,7 @@ status_t ResourceTable::assignResourceIds()
             }
 
             err = t->applyPublicEntryOrder();
+
             if (err != NO_ERROR && firstError == NO_ERROR) {
                 firstError = err;
             }
@@ -4232,7 +4233,6 @@ status_t ResourceTable::Package::setKeyStrings(const sp<AoptFile>& data)
     status_t err = setStrings(data, &mKeyStrings, &mKeyStringsMapping);
     if (err != NO_ERROR) {
         fprintf(stderr, "ERROR: Key string data is corrupt!\n");
-        return err;
     }
 
     // Retain a reference to the new data after we've successfully replaced
@@ -4367,13 +4367,38 @@ void ResourceTable::Package::movePrivateAttrs() {
 sp<ResourceTable::Package> ResourceTable::getPackage(const String16& package)
 {
     sp<Package> p = mPackages.valueFor(package);
+/*
 if (p = "android") {
     if (mBundle->getIsOverlayPackage()) {
        p = new Package(package, 0x01);
 		   mBuildAppOverlay = true;
         return p;
     }    if (p == NULL) {
-        return NULL;
+    if (p == NULL) {
+        if (mBundle->getIsOverlayPackage()) {
+            p = new Package(package, 0x01);
+        } else if (mIsAppPackage) {
+            if (mHaveAppPackage) {
+                fprintf(stderr, "Adding multiple application package resources; only one is allowed.\n"
+                                "Use -x to create extended resources.\n");
+                return NULL;
+            }
+            mHaveAppPackage = true;
+            p = new Package(package, 127);
+        } else {
+            p = new Package(package, mNextPackageId);
+        }
+        //printf("*** NEW PACKAGE: \"%s\" id=%d\n",
+        //       String8(package).string(), p->getAssignedId());
+        mPackages.add(package, p);
+        mOrderedPackages.add(p);
+        mNextPackageId++;
+    }
+
+    if (package != mAssetsPackage) {
+*/ 
+    if (p == NULL) {
+      return NULL;
     }
     return p->getType(type, sourcePos, doSetIndex);
 }

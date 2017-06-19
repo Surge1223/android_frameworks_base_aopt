@@ -222,6 +222,8 @@ int doList(Bundle* bundle)
 #endif
         const ResTable& res = assets.getResources(false);
         if (!kHaveAndroidOs) {
+            printf("\nNo resource table found.\n");
+        } else {
             printf("\nResource table:\n");
             res.print(false);
         }
