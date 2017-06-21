@@ -307,6 +307,8 @@ private:
     const char* mManifestPackageNameOverride;
     const char* mInstrumentationPackageNameOverride;
     bool        mIsOverlayPackage;
+    const char* mApkInputFile;
+    const char* mApkOutputFile;
     bool        mAutoAddOverlay;
     bool        mGenDependencies;
     bool        mNoVersionVectors;
@@ -349,8 +351,6 @@ private:
     const char* mOutputTextSymbols;
     const char* mSingleCrunchInputFile;
     const char* mSingleCrunchOutputFile;
-    const char* mApkInputFile;
-    const char* mApkOutputFile;
     bool        mBuildSharedLibrary;
     bool        mBuildAppAsSharedLibrary;
     bool        mBuildAppOverlay;
