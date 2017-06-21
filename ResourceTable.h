@@ -96,7 +96,9 @@ public:
         App,
         System,
         SharedLibrary,
-        AppFeature
+        AppFeature,
+        AppOverlay,
+		OverlayPackage,
     };
 
     class Package;
@@ -651,6 +653,7 @@ private:
     uint32_t mTypeIdOffset;
     DefaultKeyedVector<String16, sp<Package> > mPackages;
     Vector<sp<Package> > mOrderedPackages;
+    bool mBuildAppOverlay;
     size_t mNumLocal;
     SourcePos mCurrentXmlPos;
     Bundle* mBundle;

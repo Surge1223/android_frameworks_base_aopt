@@ -20,12 +20,12 @@
 #
 # E.g.:
 #     $(call add-clean-step, touch -c external/sqlite/sqlite3.h)
-#     $(call add-clean-step, rm -rf $(PRODUCT_OUT)/obj_arm/STATIC_LIBRARIES/libz_intermediates)
+#     $(call add-clean-step, rm -rf $(OUT)/obj_arm/STATIC_LIBRARIES/libz_intermediates)
 #
 # Always use "touch -c" and "rm -f" or "rm -rf" to gracefully deal with
 # files that are missing or have been moved.
 #
-# Use $(PRODUCT_OUT) to get to the "out/target/product/blah/" directory.
+# Use $(OUT) to get to the "out/target/product/blah/" directory.
 # Use $(OUT_DIR) to refer to the "out" directory.
 #
 # If you need to re-do something that's already mentioned, just copy
@@ -42,34 +42,34 @@
 #$(call add-clean-step, rm -rf $(OUT_DIR)/target/common/obj_arm/APPS/AndroidTests_intermediates)
 #$(call add-clean-step, rm -rf $(OUT_DIR)/target/common/obj_arm/JAVA_LIBRARIES/core_intermediates)
 #$(call add-clean-step, find $(OUT_DIR) -type f -name "IGTalkSession*" -print0 | xargs -0 rm -f)
-#$(call add-clean-step, rm -rf $(PRODUCT_OUT)/data/*)
+#$(call add-clean-step, rm -rf $(OUT)/data/*)
 
 # ************************************************
 # NEWER CLEAN STEPS MUST BE AT THE END OF THE LIST
 # ************************************************
 
-$(call add-clean-step, rm -rf $(PRODUCT_OUT)/obj/UTILITY_EXECUTABLES/aopt_intermediates)
-$(call add-clean-step, rm -rf $(PRODUCT_OUT)/obj_arm/UTILITY_EXECUTABLES/aopt_intermediates)
-$(call add-clean-step, rm -rf $(PRODUCT_OUT)/obj_arm/EXECUTABLES/aopt)
-$(call add-clean-step, rm -rf $(PRODUCT_OUT)/obj_arm/STATIC_LIBRARIES/libandroidfw-static_intermediates)
-$(call add-clean-step, rm -rf $(PRODUCT_OUT)/obj_arm/STATIC_LIBRARIES/libpng_intermediates)
-$(call add-clean-step, rm -rf $(PRODUCT_OUT)/obj_arm/STATIC_LIBRARIES/libcutils_intermediates)
-$(call add-clean-step, rm -rf $(PRODUCT_OUT)/obj_arm/STATIC_LIBRARIES/libbase_intermediates)
-$(call add-clean-step, rm -rf $(PRODUCT_OUT)/obj_arm/STATIC_LIBRARIES/libziparchive_intermediates)
-$(call add-clean-step, rm -rf $(PRODUCT_OUT)/obj_arm/STATIC_LIBRARIES/libaopt_intermediates)
-$(call add-clean-step, rm -rf $(PRODUCT_OUT)/obj/EXECUTABLES/aopt)
-$(call add-clean-step, rm -rf $(PRODUCT_OUT)/obj/STATIC_LIBRARIES/libandroidfw-static_intermediates)
-$(call add-clean-step, rm -rf $(PRODUCT_OUT)/obj/STATIC_LIBRARIES/libpng_intermediates)
-$(call add-clean-step, rm -rf $(PRODUCT_OUT)/obj/STATIC_LIBRARIES/libcutils_intermediates)
-$(call add-clean-step, rm -rf $(PRODUCT_OUT)/obj/STATIC_LIBRARIES/libbase_intermediates)
-$(call add-clean-step, rm -rf $(PRODUCT_OUT)/obj/STATIC_LIBRARIES/libziparchive_intermediates)
-$(call add-clean-step, rm -rf $(PRODUCT_OUT)/obj/STATIC_LIBRARIES/libaopt_intermediates)
-$(call add-clean-step, rm -rf $(PRODUCT_OUT)/obj/STATIC_LIBRARIES/libaopt_intermediates)
-$(call add-clean-step, rm -rf $(PRODUCT_OUT)/obj/STATIC_LIBRARIES/libaoptfw-static_intermediates)
-$(call add-clean-step, rm -rf $(PRODUCT_OUT)/system/bin/aopt)
-$(call add-clean-step, rm -rf $(PRODUCT_OUT)/system/bin/aopt64)
-$(call add-clean-step, rm -rf $(PRODUCT_OUT)/root/sbin/aopt)
-$(call add-clean-step, rm -rf $(PRODUCT_OUT)/root/sbin/aopt64)
+$(call add-clean-step, rm -rf $(OUT)/obj/UTILITY_EXECUTABLES/aopt_intermediates)
+$(call add-clean-step, rm -rf $(OUT)/obj_arm/UTILITY_EXECUTABLES/aopt_intermediates)
+$(call add-clean-step, rm -rf $(OUT)/obj_arm/EXECUTABLES/aopt_intermediates)
+$(call add-clean-step, rm -rf $(OUT)/obj_arm/STATIC_LIBRARIES/libandroidfw-static_intermediates)
+$(call add-clean-step, rm -rf $(OUT)/obj_arm/STATIC_LIBRARIES/libpng_intermediates)
+$(call add-clean-step, rm -rf $(OUT)/obj_arm/STATIC_LIBRARIES/libcutils_intermediates)
+$(call add-clean-step, rm -rf $(OUT)/obj_arm/STATIC_LIBRARIES/libbase_intermediates)
+$(call add-clean-step, rm -rf $(OUT)/obj_arm/STATIC_LIBRARIES/libziparchive_intermediates)
+$(call add-clean-step, rm -rf $(OUT)/obj_arm/STATIC_LIBRARIES/libaopt_intermediates)
+$(call add-clean-step, rm -rf $(OUT)/obj/EXECUTABLES/aopt_intermediates)
+$(call add-clean-step, rm -rf $(OUT)/obj/STATIC_LIBRARIES/libandroidfw-static_intermediates)
+$(call add-clean-step, rm -rf $(OUT)/obj/STATIC_LIBRARIES/libpng_intermediates)
+$(call add-clean-step, rm -rf $(OUT)/obj/STATIC_LIBRARIES/libcutils_intermediates)
+$(call add-clean-step, rm -rf $(OUT)/obj/STATIC_LIBRARIES/libbase_intermediates)
+$(call add-clean-step, rm -rf $(OUT)/obj/STATIC_LIBRARIES/libziparchive_intermediates)
+$(call add-clean-step, rm -rf $(OUT)/obj/STATIC_LIBRARIES/libaopt_intermediates)
+$(call add-clean-step, rm -rf $(OUT)/obj/STATIC_LIBRARIES/libaopt_intermediates)
+$(call add-clean-step, rm -rf $(OUT)/obj/STATIC_LIBRARIES/libaoptfw-static_intermediates)
+$(call add-clean-step, rm -rf $(OUT)/system/bin/aopt)
+$(call add-clean-step, rm -rf $(OUT)/system/bin/aopt64)
+$(call add-clean-step, rm -rf $(OUT)/root/sbin/aopt)
+$(call add-clean-step, rm -rf $(OUT)/root/sbin/aopt64)
 # ******************************************************************
 # NEWER CLEAN STEPS MUST BE AT THE END OF THE LIST ABOVE THIS BANNER
 # ******************************************************************

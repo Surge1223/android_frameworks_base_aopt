@@ -12,6 +12,8 @@
 #include <utils/List.h>
 #include <utils/Errors.h>
 
+#include <stdio.h>
+#include <string.h>
 #include <cstdlib>
 #include <getopt.h>
 #include <cassert>
@@ -59,9 +61,9 @@ void usage(void)
         "   xmlstrings       Print the strings of the given compiled xml assets.\n\n", gProgName);
     fprintf(stderr,
         " %s p[ackage] [-d][-f][-m][-u][-v][-x][-z][-M AndroidManifest.xml] \\\n"
-        "        [-0 extension [-0 extension ...]] [-g tolerance] \\\n"
+        "        [-0 extension [-0 extension ...]] [-g tolerance] [-j jarfile] \\\n"
         "        [--debug-mode] [--min-sdk-version VAL] [--target-sdk-version VAL] \\\n"
-        "        [--app-version VAL] [--app-version-name TEXT] \\\n"
+        "        [--app-version VAL] [--app-version-name TEXT] [--custom-package VAL] \\\n"
         "        [--rename-manifest-package PACKAGE] \\\n"
         "        [--rename-instrumentation-target-package PACKAGE] \\\n"
         "        [--utf16] [--auto-add-overlay] \\\n"
@@ -70,16 +72,17 @@ void usage(void)
         "        [-A asset-source-dir]  [-G class-list-file] [-P public-definitions-file] \\\n"
         "        [-D main-dex-class-list-file] \\\n"
         "        [-S resource-sources [-S resource-sources ...]] \\\n"
-        "        [-F apk-file] [R-file-dir] \\\n"
+        "        [-F apk-file] [-J R-file-dir] \\\n"
         "        [--product product1,product2,...] \\\n"
         "        [-c CONFIGS] [--preferred-density DENSITY] \\\n"
         "        [--split CONFIGS [--split CONFIGS]] \\\n"
         "        [--feature-of package [--feature-after package]] \\\n"
+        "        [-o] \\\n"
         "        [raw-files-dir [raw-files-dir] ...] \\\n"
         "        [--output-text-symbols DIR]\n"
         "\n"
         "   Package the android resources.  It will read assets and resources that are\n"
-        "   supplied with the -M -A -S or raw-files-dir arguments.  The -P -F and -R\n"
+        "   supplied with the -M -A -S or raw-files-dir arguments.  The -J -P -F and -R\n"
         "   options control which files are output.\n\n"
         , gProgName);
     fprintf(stderr,
@@ -100,6 +103,10 @@ void usage(void)
         " %s v[ersion]\n"
         "   Print program version.\n\n", gProgName);
     fprintf(stderr,
+        " %s b[atch] [-v] -in app-dir(s) ... -out output-folder ...\n"
+        "   Create bactch overlay apks on one or several resource folders\n"
+        "   and store the results in the output folder.\n\n", gProgName);
+    fprintf(stderr,
         " Modifiers:\n"
         "   -a  print Android-specific data (resources, manifest) when listing\n"
         "   -c  specify which configurations to include.  The default is all\n"
@@ -112,7 +119,13 @@ void usage(void)
         "   -d  one or more device assets to include, separated by commas\n"
         "   -f  force overwrite of existing files\n"
         "   -g  specify a pixel tolerance to force images to grayscale, default 0\n"
+        "   -j  specify a jar or zip file containing classes to include\n"
         "   -k  junk path of file(s) added\n"
+        "   -m  make package directories under location specified by -J\n"
+        "   -o  create overlay package (ie only resources; expects <overlay-package> in manifest)\n"
+#if 0
+        "   -p  pseudolocalize the default configuration\n"
+#endif
         "   -u  update existing packages (add new, replace older, remove deleted files)\n"
         "   -v  verbose output\n"
         "   -x  create extending (non-application) resource IDs\n"
@@ -123,6 +136,7 @@ void usage(void)
         "   -D  A file to output proguard options for the main dex into.\n"
         "   -F  specify the apk file to output\n"
         "   -I  add an existing package to base include set\n"
+        "   -J  specify where to output R.java resource constant definitions\n"
         "   -M  specify full path to AndroidManifest.xml to include in zip\n"
         "   -P  specify where to output public resource definitions\n"
         "   -S  directory in which to find resources.  Multiple directories will be scanned\n"
@@ -155,6 +169,12 @@ void usage(void)
         "       values will replace any value already in the manifest. By\n"
         "       default, nothing is changed if the manifest already defines\n"
         "       these attributes.\n"
+        "   --custom-package\n"
+        "       generates R.java into a different package.\n"
+        "   --extra-packages\n"
+        "       generate R.java for libraries. Separate libraries with ':'.\n"
+        "   --generate-dependencies\n"
+        "       generate dependency files in the same directories for R.java and resource package\n"
         "   --auto-add-overlay\n"
         "       Automatically add resources that are only in overlays.\n"
         "   --preferred-density\n"
@@ -197,6 +217,8 @@ void usage(void)
         "   --app-as-shared-lib\n"
         "       Make an app resource package that also can be loaded as shared library at runtime.\n"
         "       Implies --non-constant-id.\n"
+        "   --app-overlay\n"
+        "       Make an app resource package that is loaded as overlay package .\n"
         "   --error-on-failed-insert\n"
         "       Forces aopt to return an error if it fails to insert values into the manifest\n"
         "       with --debug-mode, --min-sdk-version, --target-sdk-version --version-code\n"
@@ -214,7 +236,9 @@ void usage(void)
         "       Prevents symbols from being generated for strings that do not have a default\n"
         "       localization\n"
         "   --no-version-vectors\n"
-        "       Do not automatically generate versioned copies of vector XML resources.\n",
+        "       Do not automatically generate versioned copies of vector XML resources.\n"
+        "   --private-symbols\n"
+        "       Java package name to use when generating R.java for private resources.\n",
         gDefaultIgnoreAssets);
 }
 
@@ -252,6 +276,13 @@ void removeUsage(void) {
             "   Delete specified files from Zip-compatible archive.\n\n");
 }
 
+void overlayUsage(void) {
+    header();
+    fprintf(stderr,
+        " aopt b[atch] [-v] -in app-dir(s) ... -out output-folder ...\n"
+        "   Create bactch overlay apks on one or several resource folders\n"
+        "   and store the results in the output folder.\n\n");
+}
 /*
  * Dispatch the command.
  */
@@ -272,6 +303,7 @@ int handleCommand(Bundle* bundle)
     case kCommandCrunch:       return doCrunch(bundle);
     case kCommandSingleCrunch: return doSingleCrunch(bundle);
     case kCommandDaemon:       return runInDaemonMode(bundle);
+    case kCommandBatch:        return doInDaemonMode(bundle);
     default:
         fprintf(stderr, "%s: requested command not yet supported\n", gProgName);
         return 1;
@@ -284,12 +316,13 @@ int handleCommand(Bundle* bundle)
 int main(int argc, char **argv)
 {
     char *prog = argv[0];
-    
     Bundle bundle;
     bool wantUsage = false;
     bool wantHelp = false;
     int result = 1;    // pessimistically assume an error.
     int tolerance = 0;
+  	char str[80];
+  	static const char* OverlayPackage = "overlay-package";  
 
     /* default to compression */
     bundle.setCompressionMethod(ZipEntry::kCompressDeflated);
@@ -306,6 +339,7 @@ int main(int argc, char **argv)
     fprintf(stderr,"   aopt add                             \n");
     fprintf(stderr,"   aopt remove                          \n");
     fprintf(stderr,"   aopt package                         \n");
+    fprintf(stderr,"   aopt overlay                         \n");
     fprintf(stderr,"   aopt version                         \n");
 	printf("   type any with --help for help \n");
         return -1;
@@ -316,9 +350,9 @@ int main(int argc, char **argv)
     else if (argv[1][0] == 'd')
     if (strcmp(argv[2], "--help") == 0)
         dumpUsage();
-        else {
-            bundle.setCommand(kCommandDump);
-        }
+    else {
+        bundle.setCommand(kCommandDump);
+    }
     else if (argv[1][0] == 'l')
         bundle.setCommand(kCommandList);
     else if (argv[1][0] == 'a')
@@ -332,6 +366,12 @@ int main(int argc, char **argv)
             removeUsage();
     else {
          bundle.setCommand(kCommandRemove);
+    }
+    else if (argv[1][0] == 'b')
+    if (strcmp(argv[2], "--help") == 0)
+            removeUsage();
+    else {
+         bundle.setCommand(kCommandBatch);
     }
     else if (argv[1][0] == 'p')
         bundle.setCommand(kCommandPackage);
@@ -401,6 +441,15 @@ int main(int argc, char **argv)
             case 'm':
                 bundle.setMakePackageDirs(true);
                 break;
+            case 'o':
+                bundle.setWantUTF16(true);
+                bundle.setUpdate(true);
+                bundle.setMakePackageDirs(true);
+                bundle.setVerbose(true);
+                bundle.setBuildAppOverlay(true);
+                bundle.setExtending(true);
+                bundle.setAutoAddOverlay(true);
+                break;
 #if 0
             case 'p':
                 bundle.setPseudolocalize(true);
@@ -419,7 +468,7 @@ int main(int argc, char **argv)
                 argc--;
                 argv++;
                 if (!argc) {
-                    fprintf(stderr, "AOPT: class injection is not implemented \n");
+                    fprintf(stderr, "AOPT: No argument supplied for '-j' option\n");
                     wantUsage = true;
                     goto bail;
                 }
@@ -485,7 +534,7 @@ int main(int argc, char **argv)
                 argc--;
                 argv++;
                 if (!argc) {
-                    fprintf(stderr, "AOPT: exporting R.java constants is not implemented \n");
+                    fprintf(stderr, "AOPT: No argument supplied for '-J' option\n");
                     wantUsage = true;
                     goto bail;
                 }
@@ -547,7 +596,7 @@ int main(int argc, char **argv)
                 convertPath(argv[0]);
                 bundle.setSingleCrunchInputFile(argv[0]);
                 break;
-            case 'o':
+            case 'O':
                 argc--;
                 argv++;
                 if (!argc) {
@@ -558,7 +607,7 @@ int main(int argc, char **argv)
                 convertPath(argv[0]);
                 bundle.setSingleCrunchOutputFile(argv[0]);
                 break;
-            case '0':
+            case 'e':
                 argc--;
                 argv++;
                 if (!argc) {
@@ -635,6 +684,24 @@ int main(int argc, char **argv)
                     bundle.setValues(true);
                 } else if (strcmp(cp, "-include-meta-data") == 0) {
                     bundle.setIncludeMetaData(true);
+                } else if (strcmp(cp, "-custom-package") == 0) {
+                    argc--;
+                    argv++;
+                    if (!argc) {
+                        fprintf(stderr, "ERROR: No argument supplied for '--custom-package' option\n");
+                        wantUsage = true;
+                        goto bail;
+                    }
+                    bundle.setCustomPackage(argv[0]);
+                } else if (strcmp(cp, "-extra-packages") == 0) {
+                    argc--;
+                    argv++;
+                    if (!argc) {
+                        fprintf(stderr, "ERROR: No argument supplied for '--extra-packages' option\n");
+                        wantUsage = true;
+                        goto bail;
+                    }
+                    bundle.setExtraPackages(argv[0]);
                 } else if (strcmp(cp, "-generate-dependencies") == 0) {
                     bundle.setGenDependencies(true);
                 } else if (strcmp(cp, "-utf16") == 0) {
@@ -648,6 +715,26 @@ int main(int argc, char **argv)
                         goto bail;
                     }
                     bundle.setPreferredDensity(argv[0]);
+                } else if (strcmp(cp, "-in") == 0) {
+                    argc--;
+                    argv++;
+                    if (!argc) {
+                        fprintf(stderr, "ERROR: No argument supplied for '--in' option\n");
+                        wantUsage = true;
+                        goto bail;
+                    }
+                	convertPath(argv[0]);
+                	bundle.setApkInputFile(argv[0]);
+                } else if (strcmp(cp, "-out") == 0) {
+                    argc--;
+                    argv++;
+                    if (!argc) {
+                        fprintf(stderr, "ERROR: No argument supplied for '--out' option\n");
+                        wantUsage = true;
+                        goto bail;
+                    }
+	                convertPath(argv[0]);
+	                bundle.setApkOutputFile(argv[0]);
                 } else if (strcmp(cp, "-split") == 0) {
                     argc--;
                     argv++;
@@ -727,6 +814,14 @@ int main(int argc, char **argv)
                 } else if (strcmp(cp, "-app-as-shared-lib") == 0) {
                     bundle.setNonConstantId(true);
                     bundle.setBuildAppAsSharedLibrary(true);
+                } else if (strcmp(cp, "-app-overlay") == 0) {
+  					strcpy (str, String8(argv[0]));
+  					strcat(str, OverlayPackage);
+  					puts (str);
+                    bundle.setBuildAppOverlay(true);
+                    bundle.setExtending(true);
+                    bundle.setAutoAddOverlay(true);
+                    bundle.setGenDependencies(true);
                 } else if (strcmp(cp, "-no-crunch") == 0) {
                     bundle.setUseCrunchCache(true);
                 } else if (strcmp(cp, "-ignore-assets") == 0) {

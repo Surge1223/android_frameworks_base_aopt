@@ -1803,9 +1803,12 @@ ResourceTable::ResourceTable(Bundle* bundle, const String16& assetsPackage, Reso
             break;
 
         case SharedLibrary:
-            packageId = 0x00;
+            packageId = 0x01;
             break;
 
+        case AppOverlay:
+            packageId = 0x01;
+            break;
         default:
             assert(0);
             break;
@@ -1921,7 +1924,7 @@ status_t ResourceTable::addEntry(const SourcePos& sourcePos,
     if (rid != 0) {
         sourcePos.error("Resource entry %s/%s is already defined in package %s.",
                 String8(type).string(), String8(name).string(), String8(package).string());
-        return UNKNOWN_ERROR;
+        return NO_ERROR;
     }
     
     sp<Entry> e = getEntry(package, type, name, sourcePos, overwrite,
@@ -1956,7 +1959,7 @@ status_t ResourceTable::startBag(const SourcePos& sourcePos,
     if (rid != 0) {
         sourcePos.error("Resource entry %s/%s is already defined in package %s.",
                 String8(type).string(), String8(name).string(), String8(package).string());
-        return UNKNOWN_ERROR;
+        return NO_ERROR;
     }
 
     if (overlay && !mBundle->getAutoAddOverlay() && !hasBagOrEntry(package, type, name)) {
@@ -2447,13 +2450,12 @@ uint32_t ResourceTable::getCustomResourceWithCreation(
         return resId;
     }
 
-    if (mAssetsPackage != package) {
+    if (mAssetsPackage != package && package != String16("android") {
         mCurrentXmlPos.error("creating resource for external package %s: %s/%s.",
                 String8(package).string(), String8(type).string(), String8(name).string());
         if (package == String16("android")) {
             mCurrentXmlPos.printf("did you mean to use @+id instead of @+android:id?");
         }
-        return 0;
     }
 
     String16 value("false");
@@ -2636,7 +2638,16 @@ status_t ResourceTable::assignResourceIds()
             continue;
         }
 
+        if (mPackageType == System || mPackageType == AppOverlay) {
+            p->movePrivateAttrs();
+        }
+
+
         if (mPackageType == System) {
+            p->movePrivateAttrs();
+        }
+
+        if (mPackageType == SharedLibrary) {
             p->movePrivateAttrs();
         }
 
@@ -2675,7 +2686,7 @@ status_t ResourceTable::assignResourceIds()
         }
 
         uint32_t typeIdOffset = 0;
-        if (mPackageType == AppFeature && p->getName() == mAssetsPackage) {
+        if (mPackageType == AppFeature || mPackageType == AppOverlay && p->getName() == mAssetsPackage) {
             typeIdOffset = mTypeIdOffset;
         }
 
@@ -2686,7 +2697,7 @@ status_t ResourceTable::assignResourceIds()
         // Auto-generated ID resources won't apply the type ID offset correctly unless
         // the offset is applied here first.
         // b/30607637
-        if (mPackageType == AppFeature && p->getName() == mAssetsPackage) {
+        if (mPackageType == AppFeature || mPackageType == AppOverlay && p->getName() == mAssetsPackage) {
             sp<Type> id = p->getType(String16("id"), unknown);
         }
 
@@ -2947,8 +2958,7 @@ status_t ResourceTable::flatten(Bundle* bundle, const sp<const ResourceFilter>& 
     for (size_t i = 0; i < basePackageCount; i++) {
         size_t packageId = table.getBasePackageId(i);
         String16 packageName(table.getBasePackageName(i));
-        if (packageId > 0x01 && packageId != 0x7f &&
-                packageName != String16("android")) {
+        if (packageId > 0xff && packageId != 0x8f) {
             libraryPackages.add(sp<Package>(new Package(packageName, packageId)));
         }
     }
@@ -4212,6 +4222,7 @@ sp<ResourceTable::Type> ResourceTable::Package::getType(const String16& type,
 
 status_t ResourceTable::Package::setTypeStrings(const sp<AoptFile>& data)
 {
+    mTypeStringsData = data;
     status_t err = setStrings(data, &mTypeStrings, &mTypeStringsMapping);
     if (err != NO_ERROR) {
         fprintf(stderr, "ERROR: Type string data is corrupt!\n");
