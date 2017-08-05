@@ -44,7 +44,7 @@ aoptSources := \
     WorkQueue.cpp \
     XMLNode.cpp \
     ZipEntry.cpp \
-    ZipFile.cpp 
+    ZipFile.cpp
 
 aoptTests := \
     tests/AoptConfig_test.cpp \
@@ -68,50 +68,55 @@ aoptStaticLibs := \
     libc++_static
 
 CFLAGS := \
-	-DHAVE_SYS_UIO_H \
-	-DHAVE_PTHREADS \
-	-DHAVE_SCHED_H \
-	-DHAVE_IOCTL \
-	-DHAVE_TM_GMTOFF \
-	-DANDROID_SMP=1  \
-	-DHAVE_ENDIAN_H \
-	-DHAVE_POSIX_FILEMAP \
-	-DHAVE_OFF64_T \
-	-DHAVE_LITTLE_ENDIAN_H \
-	-D__ANDROID__ \
-	-DHAVE_ANDROID_OS=1 \
-	-D_ANDROID_CONFIG_H \
-	-DHAVE_ERRNO_H='1' \
-	-DSTATIC_ANDROIDFW_FOR_TOOLS \
+    -DHAVE_SYS_UIO_H \
+    -DHAVE_PTHREADS \
+    -DHAVE_SCHED_H \
+    -DHAVE_IOCTL \
+    -DHAVE_TM_GMTOFF \
+    -DANDROID_SMP=1  \
+    -DHAVE_ENDIAN_H \
+    -DHAVE_POSIX_FILEMAP \
+    -DHAVE_OFF64_T \
+    -DHAVE_LITTLE_ENDIAN_H \
+    -D__ANDROID__ \
+    -DHAVE_ANDROID_OS=1 \
+    -D_ANDROID_CONFIG_H \
+    -DHAVE_ERRNO_H='1' \
+    -DSTATIC_ANDROIDFW_FOR_TOOLS \
 
 aoptcppFlags := \
-		-std=gnu++1y \
-		-Wno-missing-field-initializers \
-		-fno-exceptions -fno-rtti -Os
+    -std=c++14 \
+    -Wno-missing-field-initializers \
+    -fno-exceptions -fno-rtti -Os \
+    -D__STDC_FORMAT_MACROS \
+    -fpermissive
+
 
 aoptCflags := -D'AOPT_VERSION="android-$(PLATFORM_VERSION)-$(TARGET_BUILD_VARIANT)"'
 aoptCflags += -Wno-format-y2k
+
 ifeq ($(TARGET_WANTS_AAPT_COMPRESS),true)
 aoptCflags += -DAOPT_COMPRESS
 endif
-aoptCflags += $(CFLAGS)
 
+aoptCflags += $(CFLAGS)
 aoptLdLibs := -lc -lgcc -ldl -lz -lm
 
 aoptIncludes := \
-        $(LOCAL_PATH)/include \
-        system/core/base/include \
-        system/core/libutils \
-        system/core/liblog \
-        system/core/libcutils \
-        $(LOCAL_PATH)/libpng \
-        external/expat \
-        external/zlib \
-        external/libcxx/include \
-        system/core/libziparchive \
-        frameworks/base/libs/androidfw \
-        frameworks/base/include/androidfw
-        
+    $(LOCAL_PATH)/include \
+    system/core/base/include \
+    system/core/libutils \
+    system/core/liblog \
+    system/core/libcutils \
+    $(LOCAL_PATH)/libpng \
+    external/expat \
+    external/zlib \
+    external/libcxx/include \
+    system/core/libziparchive \
+    frameworks/base/libs/androidfw \
+    frameworks/base/include/androidfw \
+    system/core/libutils \
+    frameworks/native/libs/binder
 
 FIND_HOSTOS := $(shell uname -s)
 HOST_NAME := $(shell echo $(FIND_HOSTOS) |sed -e s/L/l/ |sed -e s/D/d/ |sed s/W/w/ )
